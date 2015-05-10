@@ -33,9 +33,9 @@ inline std::ostream& operator << ( std::ostream& os, const file_monitor_event &e
 	os << "file_monitor_event "
 	<< []( int type ) {
 		switch(type) {
-			case boost::asio::file_monitor_event::remove: return "ADDED";
-			case boost::asio::file_monitor_event::write: return "REMOVED";
-			case boost::asio::file_monitor_event::extend: return "MODIFIED";
+			case boost::asio::file_monitor_event::remove: return "REMOVED";
+			case boost::asio::file_monitor_event::write: return "WRITTEN";
+			case boost::asio::file_monitor_event::extend: return "EXTEND";
 			case boost::asio::file_monitor_event::rename: return "RENAMED";
 				// LVTODO: see about the new/old name stuff
 			default: return "UNKNOWN";
@@ -54,11 +54,13 @@ public:
 	{
 	}
 	
+	//TODO convert this to boost::fs::path
 	void add_file( const std::string &filename )
 	{
 		this->service.add_file( this->implementation, filename );
 	}
-	
+
+	//TODO convert this to boost::fs::path
 	void remove_file( const std::string &filename )
 	{
 		this->service.remove_file( this->implementation, filename );
@@ -67,20 +69,20 @@ public:
 	file_monitor_event monitor()
 	{
 		boost::system::error_code ec;
-		file_monitor_event ev = this->service.monitor(this->implementation, ec);
+		file_monitor_event ev = this->service.monitor( this->implementation, ec );
 		boost::asio::detail::throw_error(ec);
 		return ev;
 	}
 	
 	file_monitor_event monitor( boost::system::error_code &ec )
 	{
-		return this->service.monitor(this->implementation, ec);
+		return this->service.monitor( this->implementation, ec );
 	}
 	
 	template <typename Handler>
 	void async_monitor( Handler handler )
 	{
-		this->service.async_monitor(this->implementation, handler);
+		this->service.async_monitor( this->implementation, handler );
 	}
 };
 	

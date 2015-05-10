@@ -33,7 +33,7 @@ public:
 		// Event processing is stopped to discard queued operations.
 		async_monitor_io_service_.stop();
 		
-		// The async_monitor thread is joined to make sure the directory monitor service is
+		// The async_monitor thread is joined to make sure the file monitor service is
 		// destroyed _after_ the thread is finished (not that the thread tries to access
 		// instance properties which don't exist anymore).
 		async_monitor_thread_.join();

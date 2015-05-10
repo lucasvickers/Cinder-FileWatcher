@@ -2,11 +2,12 @@
 
 #include <boost/enable_shared_from_this.hpp>
 #include <boost/filesystem.hpp>
-#include <boost/ptr_container/ptr_unordered_map.hpp>
+#include <boost/bimap.hpp>
 #include <boost/thread/condition.hpp>
 #include <boost/thread/condition_variable.hpp>
 #include <boost/thread/mutex.hpp>
 
+#include <deque>
 #include <thread>
 #include <unistd.h>
 
@@ -16,25 +17,6 @@ namespace asio {
 class file_monitor_impl :
 public boost::enable_shared_from_this<file_monitor_impl>
 {
-	class unix_handle
-	: public boost::noncopyable
-	{
-	public:
-		unix_handle( int handle )
-		: handle_(handle)
-		{
-		}
-		
-		~unix_handle()
-		{
-			::close( handle_ );
-		}
-		
-		operator int() const { return handle_; }
-		
-	private:
-		int handle_;
-	};
 	
 public:
 	file_monitor_impl()
@@ -53,29 +35,26 @@ public:
 	
 	void add_file( std::string filename, int event_fd )
 	{
-		// LV TODO add it to the add queue
-		
-		boost::unique_lock<boost::mutex> lock( files_mutex_ );
-		files_.insert( filename, new unix_handle( event_fd ) );
+		std::lock_guard<std::mutex> lock( add_remove_mutex_ );
+		add_queue_.push_back( std::pair<std::string, int>( filename, event_fd ) );
 	}
 	
 	void remove_file( const std::string &filename )
 	{
-		// LV TODO add it to the remove queue
-		boost::unique_lock<boost::mutex> lock( files_mutex_ );
-		files_.erase( filename );
+		std::lock_guard<std::mutex> lock( add_remove_mutex_ );
+		remove_queue_.push_back( filename );
 	}
 	
 	void destroy()
 	{
-		boost::unique_lock<boost::mutex> lock( events_mutex_ );
+		std::lock_guard<std::mutex> lock( events_mutex_ );
 		run_ = false;
 		events_cond_.notify_all();
 	}
 
 	file_monitor_event popfront_event( boost::system::error_code &ec )
 	{
-		boost::unique_lock<boost::mutex> lock( events_mutex_ );
+		std::unique_lock<std::mutex> lock( events_mutex_ );
 		while( run_ && events_.empty() ) {
 			events_cond_.wait( lock );
 		}
@@ -92,7 +71,7 @@ public:
 	
 	void pushback_event( const file_monitor_event& ev )
 	{
-		boost::unique_lock<boost::mutex> lock( events_mutex_ );
+		std::lock_guard<std::mutex> lock( events_mutex_ );
 		if( run_ ) {
 			events_.push_back( ev );
 			events_cond_.notify_all();
@@ -114,83 +93,116 @@ private:
 	void work_thread()
 	{
 		while( running() ) {
-			for( auto file : files_ ) {
-				
-			}
-			
-			/*
-			for ( auto dir : dirs_ ) {
-			
-				struct timespec timeout;
-				timeout.tv_sec = 0;
-				timeout.tv_nsec = 200000000;
-				unsigned eventFilter = NOTE_WRITE | NOTE_DELETE | NOTE_RENAME | NOTE_EXTEND | NOTE_ATTRIB;
-				struct kevent event;
-				struct kevent eventData;
-				EV_SET(&event, *dir->second, EVFILT_VNODE, EV_ADD | EV_CLEAR, eventFilter, 0, 0);
-				int nEvents = kevent(kqueue_, &event, 1, &eventData, 1, &timeout);
-				
-				if (nEvents < 0 or eventData.flags == EV_ERROR)
-				{
-					boost::system::system_error e(boost::system::error_code(errno, boost::system::get_system_category()), "boost::asio::dir_monitor_impl::work_thread: kevent failed");
-					boost::throw_exception(e);
+
+			// deal with removes
+			{
+				std::lock_guard<std::mutex> lock( add_remove_mutex_ );
+				for( auto& name : remove_queue_ ) {
+					
+					auto it = files_bimap_.left.find( name );
+					if( it != files_bimap_.left.end() ) {
+						::close( it->second );
+						files_bimap_.left.erase( name );
+					}
 				}
-				
-				// dir_monitor_event::event_type type = dir_monitor_event::null;
-				// if (eventData.fflags & NOTE_WRITE) {
-				//     type = dir_monitor_event::modified;
-				// }
-				// else if (eventData.fflags & NOTE_DELETE) {
-				//     type = dir_monitor_event::removed;
-				// }
-				// else if (eventData.fflags & NOTE_RENAME) {
-				//     type = dir_monitor_event::renamed_new_name;
-				// case FILE_ACTION_RENAMED_OLD_NAME: type = dir_monitor_event::renamed_old_name; break;
-				// case FILE_ACTION_RENAMED_NEW_NAME: type = dir_monitor_event::renamed_new_name; break;
-				// }
-				
-				// Run recursive directory check to find changed files
-				// Similar to Poco's DirectoryWatcher
-				// @todo Use FSEvents API on OSX?
-				
-				dir_entry_map new_entries;
-				scan(dir->first, new_entries);
-				compare(dir->first, entries[dir->first], new_entries);
-				std::swap(entries[dir->first], new_entries);
+				remove_queue_.clear();
 			}
-			 */
+
+			// deal with adds
+			int add_index = 0;
+			{
+				std::lock_guard<std::mutex> lock( add_remove_mutex_ );
+				
+				while( ! add_queue_.empty() && add_index < event_list_size ) {
+					
+					int fd = add_queue_.begin()->second;
+					const std::string& name = add_queue_.begin()->first;
+					
+					unsigned eventFilter = NOTE_WRITE | NOTE_DELETE | NOTE_RENAME;
+					EV_SET( &event_list_[add_index++], fd, EVFILT_VNODE, EV_ADD | EV_CLEAR, eventFilter, 0, 0 );
+					
+					// if user is re-adding a file, close the old handle and use the new handle.
+					// useful if old file was deleted and they are replacing, etc
+					auto it = files_bimap_.left.find( name );
+					if( it != files_bimap_.left.end() ) {
+						::close( it->second );
+						bool success = files_bimap_.left.replace_data( it, fd );
+						assert( success );
+					} else {
+						// otherwise just add
+						files_bimap_.insert( watched_file( name, fd ) );
+					}
+
+					add_queue_.pop_front();
+				}
+			}
+			
+			struct timespec timeout;
+			timeout.tv_sec = 0;
+			timeout.tv_nsec = 200000000;
+			
+			int nEvents = kevent( kqueue_, event_list_, add_index, event_list_, event_list_size, &timeout );
+			
+			if( nEvents < 0 or event_list_[0].flags == EV_ERROR )
+			{
+				boost::system::system_error e(boost::system::error_code(errno, boost::system::get_system_category()), "boost::asio::file_monitor_impl::work_thread: kevent failed");
+				boost::throw_exception(e);
+			}
+			
+			if( nEvents > 0 ) {
+				for( int i=0; i<nEvents; ++i ) {
+					boost::filesystem::path path( files_bimap_.right.at( event_list_[i].ident ) );
+					file_monitor_event::event_type type = file_monitor_event::null;
+					
+					if( event_list_[i].fflags & NOTE_WRITE ) {
+						type = file_monitor_event::write;
+					} else if( event_list_[i].fflags & NOTE_DELETE ) {
+						type = file_monitor_event::remove;
+					} else if( event_list_[i].fflags & NOTE_RENAME ) {
+						type = file_monitor_event::rename;
+					}
+					pushback_event( file_monitor_event( path, type ) );
+				}
+			}
 		}
 	}
 	
 	bool running()
 	{
 		// Access to run_ is sychronized with stop_work_thread().
-		boost::mutex::scoped_lock lock( work_thread_mutex_ );
+		std::lock_guard<std::mutex> lock( work_thread_mutex_ );
 		return run_;
 	}
 	
 	void stop_work_thread()
 	{
 		// Access to run_ is sychronized with running().
-		boost::mutex::scoped_lock lock( work_thread_mutex_ );
+		std::lock_guard<std::mutex> lock( work_thread_mutex_ );
 		run_ = false;
 	}
 	
 	int kqueue_;
 	bool run_;
-	boost::mutex work_thread_mutex_;
+	std::mutex work_thread_mutex_;
 	std::thread work_thread_;
 	
-	// LV TODO see if you can remove the files_mutex_
-	boost::mutex add_remove_mutex_;
-	boost::ptr_unordered_map<std::string, unix_handle> files_;
-	//boost::ptr_unordered_map<std::string, unix_handle> files_;
+	// need to go from unix_handle.id -> path and path -> unix_handle
+	typedef boost::bimap< std::string, int > files_bimap;
+	typedef files_bimap::value_type watched_file;
+	files_bimap files_bimap_;
+
+	// for adding and removing outside of the worker thread
+	std::mutex add_remove_mutex_;
+	std::deque< std::pair< std::string, int > > add_queue_;
+	std::deque< std::string> remove_queue_;
 	
-	struct kevent eventlist_[256];
 	
-	boost::mutex events_mutex_;
-	boost::condition_variable events_cond_;
-	std::deque<file_monitor_event> events_;
+	static const int event_list_size = 256;
+	struct kevent event_list_[event_list_size];
+	
+	std::mutex events_mutex_;
+	std::condition_variable events_cond_;
+	std::deque< file_monitor_event > events_;
 };
 	
 } // asio namespace
