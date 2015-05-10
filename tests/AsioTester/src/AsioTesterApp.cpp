@@ -33,14 +33,7 @@ void AsioTesterApp::file_event_handler( const boost::system::error_code &ec, con
 	// re-process if no error
 	if( ! ec && ev.type != boost::asio::file_monitor_event::null )
 	{
-		// add it back if the file is still valid
-		if( ev.type != boost::asio::file_monitor_event::remove &&
-			ev.type != boost::asio::file_monitor_event::rename )
-		{
-			// NOTE: will be more effecient if I took a filesystem::path originally
-			//fm->remove_file( ev.path.string() );
-			//fm->add_file( ev.path.string() );
-		}
+		// process it.. remove if it's a delete, etc
 	}
 	
 	// add a new handler
@@ -53,9 +46,6 @@ void AsioTesterApp::setup()
 	work = auto_ptr<boost::asio::io_service::work>( new boost::asio::io_service::work( io_service ) );
 	// prime the first handler
 	fm->async_monitor( boost::bind( &AsioTesterApp::file_event_handler, this, _1, _2 ) );
-	//fm->add_file( "/tmp/lucas" );
-	//io_service.poll();
-	//io_service.run();
 }
 
 void AsioTesterApp::mouseDown( MouseEvent event )
