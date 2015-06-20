@@ -11,8 +11,7 @@
 #include <thread>
 #include <unistd.h>
 
-namespace boost {
-namespace asio {
+namespace filemonitor {
 
 class file_monitor_impl :
 public boost::enable_shared_from_this<file_monitor_impl>
@@ -22,7 +21,7 @@ public:
 	file_monitor_impl()
 		: kqueue_( init_kqueue() ),
 		run_(true),
-		work_thread_( &boost::asio::file_monitor_impl::work_thread, this )
+		work_thread_( &file_monitor_impl::work_thread, this )
 	{}
 	
 	~file_monitor_impl()
@@ -33,16 +32,16 @@ public:
 		::close( kqueue_ );
 	}
 	
-	void add_file( std::string filename, int event_fd )
+	void add_file( const boost::filesystem::path &file, int event_fd )
 	{
 		std::lock_guard<std::mutex> lock( add_remove_mutex_ );
-		add_queue_.push_back( std::pair<std::string, int>( filename, event_fd ) );
+		add_queue_.push_back( std::pair<boost::filesystem::path, int>( file, event_fd ) );
 	}
 	
-	void remove_file( const std::string &filename )
+	void remove_file( const boost::filesystem::path &file )
 	{
 		std::lock_guard<std::mutex> lock( add_remove_mutex_ );
-		remove_queue_.push_back( filename );
+		remove_queue_.push_back( file );
 	}
 	
 	void destroy()
@@ -69,7 +68,7 @@ public:
 		return ev;
 	}
 	
-	void pushback_event( const file_monitor_event& ev )
+	void pushback_event( const file_monitor_event &ev )
 	{
 		std::lock_guard<std::mutex> lock( events_mutex_ );
 		if( run_ ) {
@@ -82,8 +81,7 @@ private:
 	int init_kqueue()
 	{
 		int fd = kqueue();
-		if (fd == -1)
-		{
+		if( fd == -1 ) {
 			boost::system::system_error e(boost::system::error_code(errno, boost::system::get_system_category()), "boost::asio::file_monitor_impl::init_kqueue: kqueue failed");
 			boost::throw_exception(e);
 		}
@@ -97,7 +95,7 @@ private:
 			// deal with removes
 			{
 				std::lock_guard<std::mutex> lock( add_remove_mutex_ );
-				for( auto& name : remove_queue_ ) {
+				for( const auto& name : remove_queue_ ) {
 					
 					auto it = files_bimap_.left.find( name );
 					if( it != files_bimap_.left.end() ) {
@@ -116,21 +114,22 @@ private:
 				while( ! add_queue_.empty() && add_index < event_list_size ) {
 					
 					int fd = add_queue_.begin()->second;
-					const std::string& name = add_queue_.begin()->first;
+					const boost::filesystem::path& path = add_queue_.begin()->first;
 					
 					unsigned eventFilter = NOTE_WRITE | NOTE_DELETE | NOTE_RENAME;
 					EV_SET( &event_list_[add_index++], fd, EVFILT_VNODE, EV_ADD | EV_CLEAR, eventFilter, 0, 0 );
 					
 					// if user is re-adding a file, close the old handle and use the new handle.
-					// useful if old file was deleted and they are replacing, etc
-					auto it = files_bimap_.left.find( name );
+					// combinations of rename/delete/etc could mean our filename->fd is out of date,
+					// so use the new one
+					auto it = files_bimap_.left.find( path );
 					if( it != files_bimap_.left.end() ) {
 						::close( it->second );
 						bool success = files_bimap_.left.replace_data( it, fd );
 						assert( success );
 					} else {
 						// otherwise just add
-						files_bimap_.insert( watched_file( name, fd ) );
+						files_bimap_.insert( watched_file( path, fd ) );
 					}
 
 					add_queue_.pop_front();
@@ -145,7 +144,7 @@ private:
 			
 			if( nEvents < 0 or event_list_[0].flags == EV_ERROR )
 			{
-				boost::system::system_error e(boost::system::error_code(errno, boost::system::get_system_category()), "boost::asio::file_monitor_impl::work_thread: kevent failed");
+				boost::system::system_error e(boost::system::error_code( errno, boost::system::get_system_category() ), "boost::asio::file_monitor_impl::work_thread: kevent failed");
 				boost::throw_exception(e);
 			}
 			
@@ -157,6 +156,7 @@ private:
 					if( event_list_[i].fflags & NOTE_WRITE ) {
 						type = file_monitor_event::write;
 					} else if( event_list_[i].fflags & NOTE_DELETE ) {
+						// TODO should we auto-remove it from our structure?  can't recover from a delete
 						type = file_monitor_event::remove;
 					} else if( event_list_[i].fflags & NOTE_RENAME ) {
 						type = file_monitor_event::rename;
@@ -187,15 +187,14 @@ private:
 	std::thread work_thread_;
 	
 	// need to go from unix_handle.id -> path and path -> unix_handle
-	typedef boost::bimap< std::string, int > files_bimap;
+	typedef boost::bimap< boost::filesystem::path, int > files_bimap;
 	typedef files_bimap::value_type watched_file;
 	files_bimap files_bimap_;
 
 	// for adding and removing outside of the worker thread
 	std::mutex add_remove_mutex_;
-	std::deque< std::pair< std::string, int > > add_queue_;
-	std::deque< std::string> remove_queue_;
-	
+	std::deque< std::pair< boost::filesystem::path, int > > add_queue_;
+	std::deque< boost::filesystem::path > remove_queue_;
 	
 	static const int event_list_size = 256;
 	struct kevent event_list_[event_list_size];
@@ -206,7 +205,6 @@ private:
 };
 	
 } // asio namespace
-} // boost namespace
 
 
 

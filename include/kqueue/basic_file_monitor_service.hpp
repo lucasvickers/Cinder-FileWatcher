@@ -7,8 +7,7 @@
 #include <boost/filesystem.hpp>
 #include <boost/scoped_ptr.hpp>
 
-namespace boost {
-namespace asio {
+namespace filemonitor {
 
 template <typename FileMonitorImplementation = file_monitor_impl>
 class basic_file_monitor_service
@@ -62,19 +61,19 @@ public:
 										filename + " is not a valid file entry");
 		}
 		
-		int event_fd = ::open(filename.c_str(), O_EVTONLY);
+		int event_fd = ::open( filename.c_str(), O_EVTONLY );
 		if( event_fd < 0 ) {
 			boost::system::system_error e( boost::system::error_code( errno, boost::system::get_system_category() ),
 										   "boost::asio::file_monitor_impl::add_file: open failed" );
-			boost::throw_exception(e);
+			boost::throw_exception( e );
 		}
 		
-		impl->add_file(filename, event_fd);
+		impl->add_file( filename, event_fd );
 	}
 	
 	void remove_file( implementation_type &impl, const std::string &filename )
 	{
-		// Removing the file from the implementation will automatically close the associated file handle.
+		// Removing the file from the implementation will close the associated file handle.
 		// Closing the file handle will make kevent() clear corresponding events.
 		impl->remove_file( filename );
 	}
@@ -84,7 +83,7 @@ public:
 	 */
 	file_monitor_event monitor( implementation_type &impl, boost::system::error_code &ec )
 	{
-		return impl->popfront_event(ec);
+		return impl->popfront_event( ec );
 	}
 	
 	template <typename Handler>
@@ -102,7 +101,7 @@ public:
 		void operator()() const
 		{
 			implementation_type impl = impl_.lock();
-			if (impl) {
+			if( impl ) {
 				boost::system::error_code ec;
 				file_monitor_event ev = impl->popfront_event( ec );
 				this->io_service_.post( boost::asio::detail::bind_handler( handler_, ec, ev ) );
@@ -143,8 +142,7 @@ private:
 template <typename FileMonitorImplementation>
 boost::asio::io_service::id basic_file_monitor_service<FileMonitorImplementation>::id;
 
-} // asio namespace
-} // boost namespace
+} // filemonitor namespace
 
 
 

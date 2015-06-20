@@ -4,8 +4,7 @@
 #include <boost/filesystem.hpp>
 #include <string>
 
-namespace boost {
-namespace asio {
+namespace filemonitor {
 
 struct file_monitor_event
 {
@@ -33,11 +32,10 @@ inline std::ostream& operator << ( std::ostream& os, const file_monitor_event &e
 	os << "file_monitor_event "
 	<< []( int type ) {
 		switch(type) {
-			case boost::asio::file_monitor_event::remove: return "REMOVED";
-			case boost::asio::file_monitor_event::write: return "WRITTEN";
-			case boost::asio::file_monitor_event::extend: return "EXTEND";
-			case boost::asio::file_monitor_event::rename: return "RENAMED";
-				// LVTODO: see about the new/old name stuff
+			case file_monitor_event::remove: return "REMOVED";
+			case file_monitor_event::write: return "WRITTEN";
+			case file_monitor_event::rename: return "RENAMED";
+				// TODO: see about the new/old name stuff
 			default: return "UNKNOWN";
 		}
 	} ( ev.type ) << " " << ev.path;
@@ -86,5 +84,4 @@ public:
 	}
 };
 	
-}
 }
