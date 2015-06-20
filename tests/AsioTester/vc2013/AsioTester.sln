@@ -1,7 +1,7 @@
 
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2013
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "AsioTester", "AsioTester.vcxproj", "{B07FB35C-3050-484E-A03E-EFF6F359A9A5}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "AsioTester", "AsioTester.vcxproj", "{E134D8BA-8A33-488F-8778-7D3D6B5F32DF}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -9,10 +9,10 @@ Global
 		Release|x64 = Release|x64
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{B07FB35C-3050-484E-A03E-EFF6F359A9A5}.Debug|x64.ActiveCfg = Debug|x64
-		{B07FB35C-3050-484E-A03E-EFF6F359A9A5}.Debug|x64.Build.0 = Debug|x64
-		{B07FB35C-3050-484E-A03E-EFF6F359A9A5}.Release|x64.ActiveCfg = Release|x64
-		{B07FB35C-3050-484E-A03E-EFF6F359A9A5}.Release|x64.Build.0 = Release|x64
+		{E134D8BA-8A33-488F-8778-7D3D6B5F32DF}.Debug|x64.ActiveCfg = Debug|x64
+		{E134D8BA-8A33-488F-8778-7D3D6B5F32DF}.Debug|x64.Build.0 = Debug|x64
+		{E134D8BA-8A33-488F-8778-7D3D6B5F32DF}.Release|x64.ActiveCfg = Release|x64
+		{E134D8BA-8A33-488F-8778-7D3D6B5F32DF}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

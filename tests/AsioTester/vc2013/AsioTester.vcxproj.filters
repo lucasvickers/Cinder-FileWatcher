@@ -1,3 +1,4 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <Filter Include="Source Files">
@@ -11,6 +12,15 @@
     <Filter Include="Resource Files">
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav</Extensions>
+    </Filter>
+    <Filter Include="Header Files\filemonitor">
+      <UniqueIdentifier>{08c4391f-9592-4841-865e-1e9d1f1f9aa5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\filemonitor\windows">
+      <UniqueIdentifier>{1292a15a-7c93-4f73-8b47-866dc12a3f7c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\filemonitor\polling">
+      <UniqueIdentifier>{adbaa01b-4c67-46ef-9318-56832f03dcb8}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -27,6 +37,24 @@
   <ItemGroup>
     <ClInclude Include="..\include\Resources.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\windows\basic_file_monitor_service.hpp">
+      <Filter>Header Files\filemonitor\windows</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\windows\file_monitor_impl.hpp">
+      <Filter>Header Files\filemonitor\windows</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\polling\basic_file_monitor_service.hpp">
+      <Filter>Header Files\filemonitor\polling</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\polling\file_monitor_impl.hpp">
+      <Filter>Header Files\filemonitor\polling</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\basic_file_monitor.hpp">
+      <Filter>Header Files\filemonitor</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\file_monitor.hpp">
+      <Filter>Header Files\filemonitor</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

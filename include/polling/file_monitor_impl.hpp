@@ -81,7 +81,7 @@ namespace filemonitor {
 		void work_thread()
 		{
 			while( running() ) {
-				
+		
 				// deal with removes
 				{
 					std::lock_guard<std::mutex> lock( add_remove_mutex_ );
