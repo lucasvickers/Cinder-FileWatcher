@@ -1,3 +1,8 @@
+//
+// Distributed under the Boost Software License, Version 1.0. (See accompanying
+// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
+//
+
 #pragma once
 
 #include <boost/asio.hpp>
@@ -10,11 +15,12 @@ struct file_monitor_event
 {
 	enum event_type
 	{
-		null = 0,
-		remove = 1,		// removed
-		write = 2,		// contents changed
-		extend = 3,		// size increased
-		rename = 4		// renamed
+		null,
+		removed,		// file removed
+		added,			// file added
+		modified,		// file changed
+		renamed_old,	// file renamed, old name
+		renamed_new		// file renamed, new name
 	};
 	
 	file_monitor_event()
@@ -31,11 +37,12 @@ inline std::ostream& operator << ( std::ostream& os, const file_monitor_event &e
 {
 	os << "file_monitor_event "
 	<< []( int type ) {
-		switch(type) {
-			case file_monitor_event::remove: return "REMOVED";
-			case file_monitor_event::write: return "WRITTEN";
-			case file_monitor_event::rename: return "RENAMED";
-				// TODO: see about the new/old name stuff
+		switch( type ) {
+			case file_monitor_event::removed: return "REMOVED";
+			case file_monitor_event::added: return "ADDED";
+			case file_monitor_event::modified: return "MODIFIED";
+			case file_monitor_event::renamed_old: return "RENAMED_OLD";
+			case file_monitor_event::renamed_new: return "RENAMED_NEW";
 			default: return "UNKNOWN";
 		}
 	} ( ev.type ) << " " << ev.path;
@@ -52,23 +59,21 @@ public:
 	{
 	}
 	
-	//TODO convert this to boost::fs::path
-	void add_file( const std::string &filename )
+	void add_file( const boost::filesystem::path &path )
 	{
-		this->service.add_file( this->implementation, filename );
+		this->service.add_file( this->implementation, path );
 	}
 
-	//TODO convert this to boost::fs::path
-	void remove_file( const std::string &filename )
+	void remove_file( const boost::filesystem::path &path )
 	{
-		this->service.remove_file( this->implementation, filename );
+		this->service.remove_file( this->implementation, path );
 	}
 	
 	file_monitor_event monitor()
 	{
 		boost::system::error_code ec;
 		file_monitor_event ev = this->service.monitor( this->implementation, ec );
-		boost::asio::detail::throw_error(ec);
+		boost::asio::detail::throw_error( ec );
 		return ev;
 	}
 	

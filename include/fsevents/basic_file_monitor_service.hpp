@@ -61,9 +61,9 @@ public:
 	
 	void add_file( implementation_type &impl, const boost::filesystem::path &path )
 	{
-		if ( ! boost::filesystem::is_regular_file( path ) ) {
-			throw std::invalid_argument( "boost::asio::basic_file_monitor_service::add_file: " +
-										 path.string() + " is not a valid file entry");
+		if ( ! boost::filesystem::is_regular_file( path ) && ! boost::filesystem::is_directory( path ) ) {
+			throw std::invalid_argument("boost::asio::basic_file_monitor_service::add_file: \"" +
+										path.string() + "\" is not a valid file or directory entry");
 		}
 		impl->add_file( path );
 	}
@@ -103,8 +103,8 @@ public:
 			}
 			else {
 				this->io_service_.post( boost::asio::detail::bind_handler( handler_,
-																		   boost::asio::error::operation_aborted,
-																		   file_monitor_event() ) );
+																	   boost::asio::error::operation_aborted,
+																	   file_monitor_event() ) );
 			}
 		}
 		
@@ -136,7 +136,7 @@ private:
 
 template <typename FileMonitorImplementation>
 boost::asio::io_service::id basic_file_monitor_service<FileMonitorImplementation>::id;
-	
+
 } // filemonitor namespace
 
 
