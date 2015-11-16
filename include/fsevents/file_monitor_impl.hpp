@@ -37,16 +37,16 @@ public:
 	
 	void add_file( const boost::filesystem::path &file )
 	{
-		std::lock_guard<std::mutex> lock( dirs_mutex_ );
-		dirs_.insert( file );
+		std::lock_guard<std::mutex> lock( paths_mutex_ );
+		paths_.insert( file );
 		stop_fsevents();
 		start_fsevents();
 	}
 	
 	void remove_file( const boost::filesystem::path &file )
 	{
-		std::lock_guard<std::mutex> lock( dirs_mutex_ );
-		dirs_.erase( file );
+		std::lock_guard<std::mutex> lock( paths_mutex_ );
+		paths_.erase( file );
 		stop_fsevents();
 		start_fsevents();
 	}
@@ -99,7 +99,7 @@ private:
 	
 	void start_fsevents()
 	{
-		if (dirs_.size() == 0) {
+		if ( paths_.size() == 0 ) {
 			fsevents_ = nullptr;
 			return;
 		}
@@ -108,7 +108,7 @@ private:
 		fsevents_ = FSEventStreamCreate( kCFAllocatorDefault,
 										 &filemonitor::file_monitor_impl::fsevents_callback,
 										 &context,
-										 make_array( dirs_ ),
+										 make_array( paths_ ),
 										 //todo determine when we need to support historical events (if ever, I hope never)
 										 kFSEventStreamEventIdSinceNow, 		// only new modifications
 										 (CFTimeInterval) 1.0, 					// 1 second latency interval
@@ -123,7 +123,7 @@ private:
 		}
 		
 		while( ! runloop_ ) {
-			// todo why yield the main(service?) thread?
+			// TODO: why yield the main(service?) thread?  Kinda useless as a one shot call.
 			std::this_thread::yield();
 		}
 		
@@ -160,8 +160,7 @@ private:
 		
 		for( i = 0; i < numEvents; ++i )
 		{
-			
-			// todo keep track of these, because we don't necessarily want to return folders as events
+			// TODO: keep track of these, because we don't necessarily want to return folders as events
 			// kFSEventStreamEventFlagItemIsDir
 			// kFSEventStreamEventFlagItemIsFile
 			
@@ -170,7 +169,8 @@ private:
 				// todo log this
 			}
 			if( eventFlags[i] & kFSEventStreamEventFlagMustScanSubDirs ) {
-				// todo trigger a rescan, hope this never happens
+				// Events coalesced into a single event.  Docs recommend a directory scan to figure out what
+				// changed.  I should log errors and see if this ever actually happens.
 			}
 			if( eventFlags[i] & kFSEventStreamEventFlagItemCreated ) {
 				impl->pushback_event( file_monitor_event( path, file_monitor_event::added));
@@ -232,8 +232,8 @@ private:
 	
 	FSEventStreamRef fsevents_;
 	
-	std::mutex dirs_mutex_;
-	boost::unordered_set<boost::filesystem::path> dirs_;
+	std::mutex paths_mutex_;
+	boost::unordered_set<boost::filesystem::path> paths_;
 	
 	std::mutex events_mutex_;
 	std::condition_variable events_cond_;

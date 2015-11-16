@@ -136,10 +136,13 @@ private:
 				}
 			}
 			
+			// TODO BUG: There's an obvious bug here.  We need to add items that are registered but not added
+			
 			struct timespec timeout;
 			timeout.tv_sec = 0;
 			timeout.tv_nsec = 200000000;
-			
+
+			// Wait for changes or for timeout
 			int nEvents = kevent( kqueue_, event_list_, add_index, event_list_, event_list_size, &timeout );
 			
 			if( nEvents < 0 or event_list_[0].flags == EV_ERROR )
@@ -148,6 +151,7 @@ private:
 				boost::throw_exception(e);
 			}
 			
+			// Cycle through the number of events that occured.  The ident is the file handle.
 			if( nEvents > 0 ) {
 				for( int i=0; i<nEvents; ++i ) {
 					boost::filesystem::path path( files_bimap_.right.at( event_list_[i].ident ) );
