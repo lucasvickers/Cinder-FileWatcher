@@ -5,11 +5,11 @@
 
 #pragma once
 
-#include <boost/enable_shared_from_this.hpp>
-#include <boost/filesystem.hpp>
+#include <boost/enable_shared_from_this.hpp>	// TODO migrate to standard C++
+#include <boost/filesystem.hpp>					// TODO migrate to standard C++
 #include <CoreServices/CoreServices.h>
 
-#include <boost/unordered_set.hpp>	// to remove
+#include <boost/unordered_set.hpp>				// TODO migrate to standard C++
 
 #include <deque>
 #include <thread>
@@ -117,13 +117,14 @@ private:
 		
 		if( ! fsevents_ )
 		{
+			// TODO move this out of boost namespace
 			boost::system::system_error e( boost::system::error_code( errno, boost::system::get_system_category() ),
 										  							  "filemonitor::file_monitor_impl::init_fsevents: fsevents failed" );
 			boost::throw_exception(e);
 		}
 		
 		while( ! runloop_ ) {
-			// TODO: why yield the main(service?) thread?  Kinda useless as a one shot call.
+			// yield and let the callback do the work?
 			std::this_thread::yield();
 		}
 		
@@ -240,4 +241,4 @@ private:
 	std::deque<file_monitor_event> events_;
 };
 
-} // asio namespace
+} // filemonitor namespace
