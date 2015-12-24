@@ -1,9 +1,6 @@
 # cinder-asio-file-monitor
 ASIO file monitor for cinder
 
-Derived from Boris Schaeling's dir_monitor
-https://github.com/berkus/dir_monitor
-
 DEV NOTES:
 Initial work was done to support polling and kqueue's.  kqueues support direct file changes.  After conversations w/ Rich and Andrew, it was realized we needed support for both files and folders.
 
