@@ -59,14 +59,19 @@ public:
 	{
 	}
 	
-	void add_file( const boost::filesystem::path &path )
+	uint64_t add_file( const boost::filesystem::path &file )
 	{
-		this->service.add_file( this->implementation, path );
+		return this->service.add_file( this->implementation, file );
 	}
-
-	void remove_file( const boost::filesystem::path &path )
+	
+	uint64_t add_path( const boost::filesystem::path &path, std::string regex_match )
 	{
-		this->service.remove_file( this->implementation, path );
+		return this->service.add_path( this->implementation, path, regex_match );
+	}
+	
+	void remove( uint64_t id )
+	{
+		this->service.remove( id );
 	}
 	
 	file_monitor_event monitor()
@@ -87,6 +92,27 @@ public:
 	{
 		this->service.async_monitor( this->implementation, handler );
 	}
+	
+
+	// TODO This goes higher level, this is something else
+	
+	// watched files
+	std::set<boost::filesystem::path> files_;
+
+	
+	class watched_path
+	{
+	public:
+		boost::filesystem::path path;
+		std::string regex;
+		
+		watched_path( const boost::filesystem::path &p, const std::string &r )
+		: path(p), regex(r)
+		{ }
+	};
+	
+	// watched paths
+	std::set<watched_path> paths_;
 };
 	
 }

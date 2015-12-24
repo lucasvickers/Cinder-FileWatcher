@@ -55,10 +55,12 @@ void AsioTesterApp::mouseDown( MouseEvent event )
 void AsioTesterApp::keyDown( KeyEvent event )
 {
 	if( event.getChar() == 'a' ) {
-		fm->add_file( "/tmp/lucas" );
+		//fm->add_file( "/tmp/lucas" );
+		assert(false);
 		console() << "Added." << endl;
 	} else if( event.getChar() == 'r' ) {
-		fm->remove_file( "/tmp/lucas" );
+		//fm->remove_file( "/tmp/lucas" );
+		assert(false);
 		console() << "Removed." << endl;
 	}
 }

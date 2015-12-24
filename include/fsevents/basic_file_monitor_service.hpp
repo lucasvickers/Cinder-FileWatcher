@@ -59,18 +59,27 @@ public:
 		impl.reset();
 	}
 	
-	void add_file( implementation_type &impl, const boost::filesystem::path &path )
+	uint64_t add_path( implementation_type &impl, const boost::filesystem::path &path, const std::string& regex_match )
 	{
-		if ( ! boost::filesystem::is_regular_file( path ) && ! boost::filesystem::is_directory( path ) ) {
+		if ( ! boost::filesystem::is_directory( path ) ) {
 			throw std::invalid_argument("boost::asio::basic_file_monitor_service::add_file: \"" +
 										path.string() + "\" is not a valid file or directory entry");
 		}
-		impl->add_file( path );
+		return impl->add_path( path, regex_match );
 	}
 	
-	void remove_file( implementation_type &impl, const boost::filesystem::path &path )
+	uint64_t add_file( implementation_type &impl, const boost::filesystem::path &path )
 	{
-		impl->remove_file( path );
+		if ( ! boost::filesystem::is_regular_file( path ) ) {
+			throw std::invalid_argument("boost::asio::basic_file_monitor_service::add_file: \"" +
+										path.string() + "\" is not a valid file or directory entry");
+		}
+		return impl->add_file( path );
+	}
+
+	void remove( implementation_type &impl, uint64_t id )
+	{
+		impl->remove_path( id );
 	}
 	
 	/**
