@@ -18,7 +18,7 @@
 		5F15859C1B3591E0002BDF72 /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5F1585911B3591E0002BDF72 /* Cocoa.framework */; };
 		5F15859D1B3591E0002BDF72 /* IOKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5F1585921B3591E0002BDF72 /* IOKit.framework */; };
 		5F15859E1B3591E0002BDF72 /* IOSurface.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5F1585931B3591E0002BDF72 /* IOSurface.framework */; };
-		5F7D31671BC9D9AF0022CF0E /* include in Resources */ = {isa = PBXBuildFile; fileRef = 5F7D31661BC9D9AF0022CF0E /* include */; settings = {ASSET_TAGS = (); }; };
+		5F7D31671BC9D9AF0022CF0E /* include in Resources */ = {isa = PBXBuildFile; fileRef = 5F7D31661BC9D9AF0022CF0E /* include */; };
 		7EC1B98538724130846ECE4E /* AsioTesterApp.cpp in Sources */ = {isa = PBXBuildFile; fileRef = C3BEAD7A5D0D4C6D9557CF39 /* AsioTesterApp.cpp */; };
 		EA007EB225F447EDB6586DAC /* CinderApp.icns in Resources */ = {isa = PBXBuildFile; fileRef = 122866AA5CAE4600A2625382 /* CinderApp.icns */; };
 /* End PBXBuildFile section */

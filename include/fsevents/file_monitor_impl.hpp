@@ -16,7 +16,7 @@
 #include <time.h>
 
 namespace filemonitor {
-
+	
 class file_monitor_impl :
 public boost::enable_shared_from_this<file_monitor_impl>
 {
@@ -138,7 +138,7 @@ private:
 	public:
 		
 		PathEntry( const boost::filesystem::path &path,
-				   const std::string &regex_match )
+			   const std::string &regex_match )
 		: path( path ), regex_match( regex_match )
 		{}
 		
@@ -170,13 +170,13 @@ private:
 	CFArrayRef make_array( const decltype( pathsMmap_ ) &paths, const decltype( filesMmap_ ) &files )
 	{
 		/*
-		CFMutableArrayRef arr = CFArrayCreateMutable( kCFAllocatorDefault, in.size(), &kCFTypeArrayCallBacks );
-		for (auto str : in) {
-			CFStringRef cfstr = CFStringCreateWithCString( kCFAllocatorDefault, str.c_str(), kCFStringEncodingUTF8 );
-			CFArrayAppendValue( arr, cfstr );
-			CFRelease(cfstr);
-		}
-		return arr;
+		 CFMutableArrayRef arr = CFArrayCreateMutable( kCFAllocatorDefault, in.size(), &kCFTypeArrayCallBacks );
+		 for (auto str : in) {
+		 CFStringRef cfstr = CFStringCreateWithCString( kCFAllocatorDefault, str.c_str(), kCFStringEncodingUTF8 );
+		 CFArrayAppendValue( arr, cfstr );
+		 CFRelease(cfstr);
+		 }
+		 return arr;
 		 */
 	}
 	
@@ -186,25 +186,25 @@ private:
 			fsevents_ = nullptr;
 			return;
 		}
-	
+		
 		// NEED: list of unique files / paths
 		
 		FSEventStreamContext context = {0, this, NULL, NULL, NULL};
 		fsevents_ = FSEventStreamCreate( kCFAllocatorDefault,
-										 &filemonitor::file_monitor_impl::fsevents_callback,
-										 &context,
-										 make_array( pathsMmap_, filesMmap_ ),
-										 //todo determine when we need to support historical events (if ever, I hope never)
-										 kFSEventStreamEventIdSinceNow, 		// only new modifications
-										 (CFTimeInterval) 1.0, 					// 1 second latency interval
-										 kFSEventStreamCreateFlagFileEvents );
+									 &filemonitor::file_monitor_impl::fsevents_callback,
+									 &context,
+									 make_array( pathsMmap_, filesMmap_ ),
+									 //todo determine when we need to support historical events (if ever, I hope never)
+									 kFSEventStreamEventIdSinceNow, 		// only new modifications
+									 (CFTimeInterval) 1.0, 					// 1 second latency interval
+									 kFSEventStreamCreateFlagFileEvents );
 		FSEventStreamRetain( fsevents_ );
 		
 		if( ! fsevents_ )
 		{
 			// TODO move this out of boost namespace
 			boost::system::system_error e( boost::system::error_code( errno, boost::system::get_system_category() ),
-										  							  "filemonitor::file_monitor_impl::init_fsevents: fsevents failed" );
+										  "filemonitor::file_monitor_impl::init_fsevents: fsevents failed" );
 			boost::throw_exception(e);
 		}
 		
@@ -234,11 +234,11 @@ private:
 	}
 	
 	static void fsevents_callback( ConstFSEventStreamRef streamRef,
-								   void *clientCallBackInfo,
-								   size_t numEvents,
-								   void *eventPaths,
-								   const FSEventStreamEventFlags eventFlags[],
-								   const FSEventStreamEventId eventIds[] )
+							   void *clientCallBackInfo,
+							   size_t numEvents,
+							   void *eventPaths,
+							   const FSEventStreamEventFlags eventFlags[],
+							   const FSEventStreamEventId eventIds[] )
 	{
 		size_t i;
 		char **paths = (char**)eventPaths;
@@ -307,57 +307,24 @@ private:
 		CFRunLoopStop( runloop_ ); // exits the thread
 		runloop_cond_.notify_all();
 	}
-	/*
-	class PathEntry
-	{
-	public:
-		
-		PathEntry( const boost::filesystem::path &path,
-				   const std::string &regex_match )
-		: path( path ), regex_match( regex_match )
-		{}
-		
-		boost::filesystem::path path;
-		std::string regex_match;
-		// callback data
-	};
 	
-	class FileEntry
-	{
-	public:
-		
-		FileEntry( const boost::filesystem::path &path )
-		: path( path )
-		{ }
-		
-		boost::filesystem::path path;
-		// callback data
-	};
-*/
 	std::mutex 								paths_mutex_;
-
+	
 	// TODO explore the use of hashmaps
-
+	
 	// ids
 	uint64_t 								nextFileID_{0};
 	uint64_t								nextPathID_{1};
+	
 	// owns entries
 	std::unordered_map<uint64_t, PathEntry> paths_;
 	std::unordered_map<uint64_t, FileEntry> files_;
-/*
-	// references entries
-	static size_t path_hash( const boost::filesystem::path &p )
-	{
-		return boost::filesystem::hash_value( p );
-	}
-	std::unordered_multimap<boost::filesystem::path, PathEntry*, decltype( &path_hash )> pathsMmap_;
-	std::unordered_multimap<boost::filesystem::path, FileEntry*, decltype( &path_hash )> filesMmap_;
-*/
+
 	bool 									run_{false};
 	CFRunLoopRef 							runloop_;
 	std::mutex 								runloop_mutex_;
 	std::condition_variable 				runloop_cond_;
-
+	
 	std::mutex 								work_thread_mutex_;
 	std::thread 							work_thread_;
 	
@@ -366,5 +333,5 @@ private:
 	std::condition_variable 				events_cond_;
 	std::deque<file_monitor_event> 			events_;
 };
-
+	
 } // filemonitor namespace

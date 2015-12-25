@@ -5,7 +5,15 @@
 
 #pragma once
 
-#include "file_monitor_impl.hpp"
+#if defined(_WIN32) || defined(__WIN32__) || defined(WIN32)
+#  include "windows/file_monitor_impl.hpp"
+#elif defined(__APPLE__) && defined(__MACH__)
+#  include "fsevents/file_monitor_impl.hpp"
+#else
+// fallback method
+#  include "polling/file_monitor_impl.hpp"
+#endif
+
 
 #include <boost/asio.hpp>
 #include <boost/bind.hpp>
