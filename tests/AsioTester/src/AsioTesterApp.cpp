@@ -23,6 +23,8 @@ class AsioTesterApp : public App {
 	shared_ptr<filemonitor::file_monitor> fm;
 	auto_ptr<boost::asio::io_service::work> work;
 
+	
+	uint64_t id = 0;
 };
 
 void AsioTesterApp::file_event_handler( const boost::system::error_code &ec, const filemonitor::file_monitor_event &ev )
@@ -55,13 +57,14 @@ void AsioTesterApp::mouseDown( MouseEvent event )
 void AsioTesterApp::keyDown( KeyEvent event )
 {
 	if( event.getChar() == 'a' ) {
-		//fm->add_file( "/tmp/lucas" );
-		assert(false);
+		id = fm->add_file( "/tmp/lucas" );
 		console() << "Added." << endl;
 	} else if( event.getChar() == 'r' ) {
-		//fm->remove_file( "/tmp/lucas" );
-		assert(false);
-		console() << "Removed." << endl;
+		if( id > 0 ) {
+			fm->remove( id );
+			console() << "Removed." << endl;
+			id = 0;
+		}
 	}
 }
 

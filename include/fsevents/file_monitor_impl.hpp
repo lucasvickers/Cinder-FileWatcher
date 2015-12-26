@@ -1,8 +1,3 @@
-//
-// Distributed under the Boost Software License, Version 1.0. (See accompanying
-// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-//
-
 #pragma once
 
 #include <boost/enable_shared_from_this.hpp>	// TODO migrate to standard C++
@@ -44,8 +39,10 @@ public:
 		
 		auto iter = paths_.emplace( id, PathEntry( path, regex_match ) );
 		assert( iter.second );
-		// multimap is filesystem::path and pointer to the PathEntry
+		// iter.first is the multimap iter. iter is filesystem::path, pointer to the PathEntry
 		pathsMmap_.insert( std::make_pair( path, &(iter.first->second) ) );
+		
+		assert( pathsMmap_.size() == paths_.size() );
 		
 		stop_fsevents();
 		start_fsevents();
@@ -62,8 +59,10 @@ public:
 		
 		auto iter = files_.emplace( id, FileEntry( file ) );
 		assert( iter.second );
-		// multimap is filesystem::path and pointer to the FileEntry
+		// iter.first is the multimap iter. iter is filesystem::path, pointer to the FileEntry
 		filesMmap_.insert( std::make_pair( file, &(iter.first->second) ) );
+		
+		assert( filesMmap_.size() == files_.size() );
 		
 		stop_fsevents();
 		start_fsevents();
@@ -77,17 +76,17 @@ public:
 		
 		// remove from containers
 		if( id % 2 == 0 ) {
-			// remove file
-			// remove from files and filesMmap
+			// even is file
+			removeEntry<decltype( files_ ), decltype( filesMmap_ )>( id, files_, filesMmap_ );
+			assert( filesMmap_.size() == files_.size() );
 		} else {
-			// remove path
-			// remove from paths and pathsMmap
+			// odd is path
+			removeEntry<decltype( paths_ ), decltype( pathsMmap_ )>( id, paths_, pathsMmap_ );
+			assert( pathsMmap_.size() == paths_.size() );
 		}
 		
 		stop_fsevents();
 		start_fsevents();
-		
-		// NEED unique_id -> path, regex_match
 	}
 	
 	void destroy()
@@ -117,12 +116,15 @@ public:
 	void verify_event( const file_monitor_event &ev )
 	{
 		// NEED: path -> multiple path entries, file -> multiple file entries
+		// TODO move onto worker thread
+		// TODO implement this check
 		pushback_event( ev );
 	}
 	
 	void pushback_event( const file_monitor_event &ev )
 	{
 		std::lock_guard<std::mutex> lock( events_mutex_ );
+		// TODO move run into verify_event
 		if( run_ ) {
 			events_.push_back( ev );
 			events_cond_.notify_all();
@@ -131,69 +133,36 @@ public:
 	
 private:
 	
-	// move to header to fix this
-	
-	class PathEntry
-	{
-	public:
-		
-		PathEntry( const boost::filesystem::path &path,
-			   const std::string &regex_match )
-		: path( path ), regex_match( regex_match )
-		{}
-		
-		boost::filesystem::path path;
-		std::string regex_match;
-		// callback data
-	};
-	
-	class FileEntry
-	{
-	public:
-		
-		FileEntry( const boost::filesystem::path &path )
-		: path( path )
-		{ }
-		
-		boost::filesystem::path path;
-		// callback data
-	};
-	
-	// references entries
-	static size_t path_hash( const boost::filesystem::path &p )
-	{
-		return boost::filesystem::hash_value( p );
-	}
-	std::unordered_multimap<boost::filesystem::path, PathEntry*, decltype( &path_hash )> pathsMmap_;
-	std::unordered_multimap<boost::filesystem::path, FileEntry*, decltype( &path_hash )> filesMmap_;
-	
-	CFArrayRef make_array( const decltype( pathsMmap_ ) &paths, const decltype( filesMmap_ ) &files )
-	{
-		/*
-		 CFMutableArrayRef arr = CFArrayCreateMutable( kCFAllocatorDefault, in.size(), &kCFTypeArrayCallBacks );
-		 for (auto str : in) {
-		 CFStringRef cfstr = CFStringCreateWithCString( kCFAllocatorDefault, str.c_str(), kCFStringEncodingUTF8 );
-		 CFArrayAppendValue( arr, cfstr );
-		 CFRelease(cfstr);
-		 }
-		 return arr;
-		 */
-	}
-	
 	void start_fsevents()
 	{
-		if ( paths_.size() == 0 ) {
+		if ( paths_.size() == 0 && files_.size() == 0 ) {
 			fsevents_ = nullptr;
 			return;
 		}
 		
-		// NEED: list of unique files / paths
+		// Need to pass FSEvents an array of unique paths, both files and folders.
+		// We assume that there are no duplicates between pathsMmap and filesMmap
+		//  since one is only files and one only folders
+		
+		CFMutableArrayRef allPaths = CFArrayCreateMutable( kCFAllocatorDefault, pathsMmap_.size() + filesMmap_.size(), &kCFTypeArrayCallBacks );
+
+		// TODO in C++14 move to templaced lambda function
+		for( auto path : pathsMmap_ ) {
+			 CFStringRef cfstr = CFStringCreateWithCString( kCFAllocatorDefault, path.first.string().c_str(), kCFStringEncodingUTF8 );
+			 CFArrayAppendValue( allPaths, cfstr );
+			 CFRelease(cfstr);
+		}
+		for( auto file : filesMmap_ ) {
+			CFStringRef cfstr = CFStringCreateWithCString( kCFAllocatorDefault, file.first.string().c_str(), kCFStringEncodingUTF8 );
+			CFArrayAppendValue( allPaths, cfstr );
+			CFRelease(cfstr);
+		}
 		
 		FSEventStreamContext context = {0, this, NULL, NULL, NULL};
 		fsevents_ = FSEventStreamCreate( kCFAllocatorDefault,
 									 &filemonitor::file_monitor_impl::fsevents_callback,
 									 &context,
-									 make_array( pathsMmap_, filesMmap_ ),
+									 allPaths,
 									 //todo determine when we need to support historical events (if ever, I hope never)
 									 kFSEventStreamEventIdSinceNow, 		// only new modifications
 									 (CFTimeInterval) 1.0, 					// 1 second latency interval
@@ -209,7 +178,7 @@ private:
 		}
 		
 		while( ! runloop_ ) {
-			// yield and let the callback do the work?
+			// TODO yield and let the callback do the work?
 			std::this_thread::yield();
 		}
 		
@@ -218,7 +187,7 @@ private:
 		runloop_cond_.notify_all();
 		FSEventStreamFlushAsync( fsevents_ );
 		
-		// todo delete fsevents_ ?  Create pattern
+		// TODO delete fsevents_ ?  Create pattern check
 	}
 	
 	void stop_fsevents()
@@ -226,7 +195,7 @@ private:
 		if (fsevents_)
 		{
 			FSEventStreamStop( fsevents_ );
-			// todo do we need to unschedule this?
+			// TODO do we need to unschedule this?
 			// FSEventStreamUnscheduleFromRunLoop(fsevents_, runloop_, kCFRunLoopDefaultMode);
 			FSEventStreamInvalidate( fsevents_ );
 			FSEventStreamRelease( fsevents_ );
@@ -246,13 +215,13 @@ private:
 		
 		for( i = 0; i < numEvents; ++i )
 		{
-			// TODO: keep track of these, because we don't necessarily want to return folders as events
+			// TODO keep track of these, because we don't necessarily want to return folders as events
 			// kFSEventStreamEventFlagItemIsDir
 			// kFSEventStreamEventFlagItemIsFile
 			
 			boost::filesystem::path path( paths[i] );
 			if( eventFlags[i] & kFSEventStreamEventFlagNone ) {
-				// todo log this
+				// TODO log this
 			}
 			if( eventFlags[i] & kFSEventStreamEventFlagMustScanSubDirs ) {
 				// Events coalesced into a single event.  Docs recommend a directory scan to figure out what
@@ -308,18 +277,77 @@ private:
 		runloop_cond_.notify_all();
 	}
 	
+	template<typename mapType, typename mmapType>
+	void removeEntry( uint64_t id, mapType &idMap, mmapType &pathMmap )
+	{
+		auto iter = idMap.find( id );
+		assert( iter != idMap.end() );
+		
+		auto range = pathMmap.equal_range( iter->second.path );
+		assert( range.first != pathMmap.end() );
+		
+		auto rangeIter = range.first;
+		while( rangeIter != range.second ) {
+			// check pointer values
+			if( rangeIter->second == &( iter->second ) ) {
+				break;
+			}
+			++rangeIter;
+		}
+		assert( rangeIter != range.second );
+		
+		// do deletes
+		idMap.erase( iter );
+		pathMmap.erase( rangeIter );
+	}
+	
+	class PathEntry
+	{
+	public:
+		
+		PathEntry( const boost::filesystem::path &path,
+			   const std::string &regex_match )
+		: path( path ), regex_match( regex_match )
+		{}
+		
+		boost::filesystem::path path;
+		std::string regex_match;
+		// callback data
+	};
+	
+	class FileEntry
+	{
+	public:
+		
+		FileEntry( const boost::filesystem::path &path )
+		: path( path )
+		{ }
+		
+		boost::filesystem::path path;
+		// callback data
+	};
+	
 	std::mutex 								paths_mutex_;
 	
-	// TODO explore the use of hashmaps
-	
 	// ids
-	uint64_t 								nextFileID_{0};
+	uint64_t 								nextFileID_{2};
 	uint64_t								nextPathID_{1};
+	
+	// TODO explore the use of hashmaps
 	
 	// owns entries
 	std::unordered_map<uint64_t, PathEntry> paths_;
 	std::unordered_map<uint64_t, FileEntry> files_;
 
+	// references entries
+	struct path_hash {
+		size_t operator()( const boost::filesystem::path &p ) const {
+			return boost::filesystem::hash_value( p );
+		}
+	};
+	std::unordered_multimap<boost::filesystem::path, PathEntry*, path_hash> pathsMmap_;
+	std::unordered_multimap<boost::filesystem::path, FileEntry*, path_hash> filesMmap_;
+	
 	bool 									run_{false};
 	CFRunLoopRef 							runloop_;
 	std::mutex 								runloop_mutex_;
