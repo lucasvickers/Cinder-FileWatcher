@@ -19,13 +19,16 @@ struct file_monitor_event
 	};
 	
 	file_monitor_event()
-	: type( null ) { }
+	: type( null ), id( 0 )
+	{ }
 	
-	file_monitor_event( const boost::filesystem::path &p, event_type t )
-	: path( p ), type( t ) { }
+	file_monitor_event( const boost::filesystem::path &p, event_type t, uint64_t id )
+	: path( p ), type( t ), id( id )
+	{ }
 	
 	boost::filesystem::path path;
-	event_type type;
+	event_type 				type;
+	uint64_t 				id;
 };
 
 inline std::ostream& operator << ( std::ostream& os, const file_monitor_event &ev )
@@ -59,7 +62,7 @@ public:
 		return this->service.add_file( this->implementation, file );
 	}
 	
-	uint64_t add_path( const boost::filesystem::path &path, std::string regex_match )
+	uint64_t add_path( const boost::filesystem::path &path, const std::string &regex_match )
 	{
 		return this->service.add_path( this->implementation, path, regex_match );
 	}
@@ -87,27 +90,6 @@ public:
 	{
 		this->service.async_monitor( this->implementation, handler );
 	}
-	
-
-	// TODO This goes higher level, this is something else
-	
-	// watched files
-	std::set<boost::filesystem::path> files_;
-
-	
-	class watched_path
-	{
-	public:
-		boost::filesystem::path path;
-		std::string regex;
-		
-		watched_path( const boost::filesystem::path &p, const std::string &r )
-		: path(p), regex(r)
-		{ }
-	};
-	
-	// watched paths
-	std::set<watched_path> paths_;
 };
 	
 }

@@ -13,7 +13,10 @@
 #include <boost/asio.hpp>
 #include <boost/bind.hpp>
 #include <boost/filesystem.hpp>
-#include <boost/scoped_ptr.hpp>
+#include <boost/scoped_ptr.hpp>			// TODO check need of scoped_ptr
+
+// TODO move to cinder's asio
+//#include "asio/asio.hpp"
 
 namespace filemonitor {
 
@@ -121,10 +124,10 @@ public:
 		}
 		
 	private:
-		boost::weak_ptr<FileMonitorImplementation> impl_;
-		boost::asio::io_service &io_service_;
-		boost::asio::io_service::work work_;
-		Handler handler_;
+		boost::weak_ptr<FileMonitorImplementation> 	impl_;
+		boost::asio::io_service 					&io_service_;
+		boost::asio::io_service::work 				work_;
+		Handler 									handler_;
 	};
 	
 	/**
@@ -141,9 +144,9 @@ private:
 	{
 	}
 	
-	boost::asio::io_service async_monitor_io_service_;
-	boost::scoped_ptr<boost::asio::io_service::work> async_monitor_work_;
-	std::thread async_monitor_thread_;
+	boost::asio::io_service 							async_monitor_io_service_;
+	boost::scoped_ptr<boost::asio::io_service::work> 	async_monitor_work_;
+	std::thread 										async_monitor_thread_;
 };
 
 template <typename FileMonitorImplementation>

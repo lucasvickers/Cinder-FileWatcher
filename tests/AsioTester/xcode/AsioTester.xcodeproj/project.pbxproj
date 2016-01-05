@@ -18,7 +18,9 @@
 		5F15859C1B3591E0002BDF72 /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5F1585911B3591E0002BDF72 /* Cocoa.framework */; };
 		5F15859D1B3591E0002BDF72 /* IOKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5F1585921B3591E0002BDF72 /* IOKit.framework */; };
 		5F15859E1B3591E0002BDF72 /* IOSurface.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5F1585931B3591E0002BDF72 /* IOSurface.framework */; };
-		5F7D31671BC9D9AF0022CF0E /* include in Resources */ = {isa = PBXBuildFile; fileRef = 5F7D31661BC9D9AF0022CF0E /* include */; };
+		5F6541C61C30A96E00B20E58 /* filemonitor in Resources */ = {isa = PBXBuildFile; fileRef = 5F6541C41C30A96E00B20E58 /* filemonitor */; };
+		5F6541C71C30A96E00B20E58 /* filewatcher in Resources */ = {isa = PBXBuildFile; fileRef = 5F6541C51C30A96E00B20E58 /* filewatcher */; };
+		5F6541C91C39FB7600B20E58 /* FileWatcher.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 5F6541C81C39FB7600B20E58 /* FileWatcher.cpp */; };
 		7EC1B98538724130846ECE4E /* AsioTesterApp.cpp in Sources */ = {isa = PBXBuildFile; fileRef = C3BEAD7A5D0D4C6D9557CF39 /* AsioTesterApp.cpp */; };
 		EA007EB225F447EDB6586DAC /* CinderApp.icns in Resources */ = {isa = PBXBuildFile; fileRef = 122866AA5CAE4600A2625382 /* CinderApp.icns */; };
 /* End PBXBuildFile section */
@@ -38,11 +40,11 @@
 		5F1585911B3591E0002BDF72 /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = ../../../../../../../../System/Library/Frameworks/Cocoa.framework; sourceTree = "<group>"; };
 		5F1585921B3591E0002BDF72 /* IOKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = IOKit.framework; path = System/Library/Frameworks/IOKit.framework; sourceTree = SDKROOT; };
 		5F1585931B3591E0002BDF72 /* IOSurface.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = IOSurface.framework; path = System/Library/Frameworks/IOSurface.framework; sourceTree = SDKROOT; };
-		5F7D31661BC9D9AF0022CF0E /* include */ = {isa = PBXFileReference; lastKnownFileType = folder; name = include; path = ../../../include; sourceTree = "<group>"; };
-		80C6F1CA2F74492B98107C67 /* Resources.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = Resources.h; path = ../include/Resources.h; sourceTree = "<group>"; };
+		5F6541C41C30A96E00B20E58 /* filemonitor */ = {isa = PBXFileReference; lastKnownFileType = folder; name = filemonitor; path = ../../../filemonitor; sourceTree = "<group>"; };
+		5F6541C51C30A96E00B20E58 /* filewatcher */ = {isa = PBXFileReference; lastKnownFileType = folder; name = filewatcher; path = ../../../filewatcher; sourceTree = "<group>"; };
+		5F6541C81C39FB7600B20E58 /* FileWatcher.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = FileWatcher.cpp; path = ../../../filewatcher/FileWatcher.cpp; sourceTree = "<group>"; };
 		8D1107320486CEB800E47090 /* AsioTester.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = AsioTester.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		B05264A1B4134AE28030DB88 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		BF5C617876C14C3A9CCFAC88 /* AsioTester_Prefix.pch */ = {isa = PBXFileReference; lastKnownFileType = "\"\""; path = AsioTester_Prefix.pch; sourceTree = "<group>"; };
 		C3BEAD7A5D0D4C6D9557CF39 /* AsioTesterApp.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.cpp; name = AsioTesterApp.cpp; path = ../src/AsioTesterApp.cpp; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -71,7 +73,8 @@
 		01B97315FEAEA392516A2CEA /* Blocks */ = {
 			isa = PBXGroup;
 			children = (
-				5F8555FC1AFFAFB800C2F25A /* CinderFileMonitor */,
+				5F6541C51C30A96E00B20E58 /* filewatcher */,
+				5F6541C41C30A96E00B20E58 /* filemonitor */,
 			);
 			name = Blocks;
 			sourceTree = "<group>";
@@ -79,6 +82,7 @@
 		080E96DDFE201D6D7F000001 /* Source */ = {
 			isa = PBXGroup;
 			children = (
+				5F6541C81C39FB7600B20E58 /* FileWatcher.cpp */,
 				C3BEAD7A5D0D4C6D9557CF39 /* AsioTesterApp.cpp */,
 			);
 			name = Source;
@@ -123,22 +127,12 @@
 			isa = PBXGroup;
 			children = (
 				01B97315FEAEA392516A2CEA /* Blocks */,
-				29B97315FDCFA39411CA2CEA /* Headers */,
 				080E96DDFE201D6D7F000001 /* Source */,
 				29B97317FDCFA39411CA2CEA /* Resources */,
 				29B97323FDCFA39411CA2CEA /* Frameworks */,
 				19C28FACFE9D520D11CA2CBB /* Products */,
 			);
 			name = AsioTester;
-			sourceTree = "<group>";
-		};
-		29B97315FDCFA39411CA2CEA /* Headers */ = {
-			isa = PBXGroup;
-			children = (
-				80C6F1CA2F74492B98107C67 /* Resources.h */,
-				BF5C617876C14C3A9CCFAC88 /* AsioTester_Prefix.pch */,
-			);
-			name = Headers;
 			sourceTree = "<group>";
 		};
 		29B97317FDCFA39411CA2CEA /* Resources */ = {
@@ -157,14 +151,6 @@
 				1058C7A2FEA54F0111CA2CBB /* Other Frameworks */,
 			);
 			name = Frameworks;
-			sourceTree = "<group>";
-		};
-		5F8555FC1AFFAFB800C2F25A /* CinderFileMonitor */ = {
-			isa = PBXGroup;
-			children = (
-				5F7D31661BC9D9AF0022CF0E /* include */,
-			);
-			name = CinderFileMonitor;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -220,7 +206,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				EA007EB225F447EDB6586DAC /* CinderApp.icns in Resources */,
-				5F7D31671BC9D9AF0022CF0E /* include in Resources */,
+				5F6541C61C30A96E00B20E58 /* filemonitor in Resources */,
+				5F6541C71C30A96E00B20E58 /* filewatcher in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -232,6 +219,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				7EC1B98538724130846ECE4E /* AsioTesterApp.cpp in Sources */,
+				5F6541C91C39FB7600B20E58 /* FileWatcher.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -261,7 +249,7 @@
 				OTHER_LDFLAGS = "\"$(CINDER_PATH)/lib/libcinder_d.a\"";
 				PRODUCT_NAME = AsioTester;
 				SYMROOT = ./build;
-				USER_HEADER_SEARCH_PATHS = "\"$(CINDER_PATH)/include\" ../include ../../../include";
+				USER_HEADER_SEARCH_PATHS = "\"$(CINDER_PATH)/include\" ../include ../../../filemonitor/include ../../../filewatcher";
 				WRAPPER_EXTENSION = app;
 			};
 			name = Debug;
@@ -291,7 +279,7 @@
 				PRODUCT_NAME = AsioTester;
 				STRIP_INSTALLED_PRODUCT = YES;
 				SYMROOT = ./build;
-				USER_HEADER_SEARCH_PATHS = "\"$(CINDER_PATH)/include\" ../include ../../../include";
+				USER_HEADER_SEARCH_PATHS = "\"$(CINDER_PATH)/include\" ../include ../../../filemonitor/include ../../../filewatcher";
 				WRAPPER_EXTENSION = app;
 			};
 			name = Release;

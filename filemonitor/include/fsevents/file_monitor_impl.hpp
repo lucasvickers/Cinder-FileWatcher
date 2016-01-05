@@ -1,13 +1,12 @@
 #pragma once
 
-#include <boost/enable_shared_from_this.hpp>	// TODO migrate to standard C++
-#include <boost/filesystem.hpp>					// TODO migrate to standard C++
+#include <boost/enable_shared_from_this.hpp>	// TODO migrate to standard C++ / cinder if possible
+#include <boost/filesystem.hpp>					// TODO migrate to standard C++ / cinder if possible
+
 #include <CoreServices/CoreServices.h>
-
-#include <boost/unordered_set.hpp>				// TODO migrate to standard C++
-
 #include <deque>
 #include <thread>
+#include <functional>
 #include <time.h>
 
 namespace filemonitor {
@@ -113,12 +112,14 @@ public:
 		return ev;
 	}
 	
-	void verify_event( const file_monitor_event &ev )
+	void verify_event( const boost::filesystem::path &path, file_monitor_event::event_type type )
 	{
 		// NEED: path -> multiple path entries, file -> multiple file entries
 		// TODO move onto worker thread
 		// TODO implement this check
-		pushback_event( ev );
+		
+		// TODO pass ID (not 0)
+		pushback_event( file_monitor_event( path, type, 0 ) );
 	}
 	
 	void pushback_event( const file_monitor_event &ev )
@@ -228,23 +229,23 @@ private:
 				// changed.  I should log errors and see if this ever actually happens.
 			}
 			if( eventFlags[i] & kFSEventStreamEventFlagItemCreated ) {
-				impl->verify_event( file_monitor_event( path, file_monitor_event::added ) );
+				impl->verify_event( path, file_monitor_event::added );
 			}
 			if( eventFlags[i] & kFSEventStreamEventFlagItemRemoved ) {
-				impl->verify_event( file_monitor_event( path, file_monitor_event::removed ) );
+				impl->verify_event( path, file_monitor_event::removed );
 			}
 			if( eventFlags[i] & kFSEventStreamEventFlagItemModified ) {
-				impl->verify_event( file_monitor_event( path, file_monitor_event::modified ) );
+				impl->verify_event( path, file_monitor_event::modified );
 			}
 			if( eventFlags[i] & kFSEventStreamEventFlagItemRenamed )
 			{
 				if( ! boost::filesystem::exists( path ) )
 				{
-					impl->verify_event( file_monitor_event( path, file_monitor_event::renamed_old ) );
+					impl->verify_event( path, file_monitor_event::renamed_old );
 				}
 				else
 				{
-					impl->verify_event( file_monitor_event( path, file_monitor_event::renamed_new ) );
+					impl->verify_event( path, file_monitor_event::renamed_new );
 				}
 			}
 		}
@@ -311,8 +312,7 @@ private:
 		{}
 		
 		boost::filesystem::path path;
-		std::string regex_match;
-		// callback data
+		std::string 			regex_match;
 	};
 	
 	class FileEntry
@@ -324,7 +324,6 @@ private:
 		{ }
 		
 		boost::filesystem::path path;
-		// callback data
 	};
 	
 	std::mutex 								paths_mutex_;
@@ -342,7 +341,11 @@ private:
 	// references entries
 	struct path_hash {
 		size_t operator()( const boost::filesystem::path &p ) const {
-			return boost::filesystem::hash_value( p );
+
+			return std::hash<std::string>()( p.string() );
+			
+			// TODO resolve fs::hash_value once namespace has been converted
+			//return boost::filesystem::hash_value( p );
 		}
 	};
 	std::unordered_multimap<boost::filesystem::path, PathEntry*, path_hash> pathsMmap_;
