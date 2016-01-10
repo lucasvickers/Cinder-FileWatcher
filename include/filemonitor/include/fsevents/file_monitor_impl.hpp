@@ -17,8 +17,7 @@ public boost::enable_shared_from_this<file_monitor_impl>
 	
 public:
 	file_monitor_impl()
-	: run_(true),
-	work_thread_( &file_monitor_impl::work_thread, this )
+	: run_(true), work_thread_( &file_monitor_impl::work_thread, this ), fsevents_( nullptr )
 	{}
 	
 	~file_monitor_impl()
@@ -36,7 +35,7 @@ public:
 		uint64_t id = nextPathID_;
 		nextPathID_ += 2;
 		
-		auto iter = paths_.emplace( id, PathEntry( path, regex_match ) );
+		auto iter = paths_.emplace( id, PathEntry( path, regex_match, id ) );
 		assert( iter.second );
 		// iter.first is the multimap iter. iter is filesystem::path, pointer to the PathEntry
 		pathsMmap_.insert( std::make_pair( path, &(iter.first->second) ) );
@@ -56,7 +55,7 @@ public:
 		uint64_t id = nextFileID_;
 		nextFileID_ += 2;
 		
-		auto iter = files_.emplace( id, FileEntry( file ) );
+		auto iter = files_.emplace( id, FileEntry( file, id ) );
 		assert( iter.second );
 		// iter.first is the multimap iter. iter is filesystem::path, pointer to the FileEntry
 		filesMmap_.insert( std::make_pair( file, &(iter.first->second) ) );
@@ -118,8 +117,13 @@ public:
 		// TODO move onto worker thread
 		// TODO implement this check
 		
-		// TODO pass ID (not 0)
-		pushback_event( file_monitor_event( path, type, 0 ) );
+		auto range = filesMmap_.equal_range( path );
+		for( auto it = range.first; it != range.second; ++it ) {
+			pushback_event( file_monitor_event( path, type, it->second->entry_id ) );
+		}
+		
+		// TODO check regex's
+		
 	}
 	
 	void pushback_event( const file_monitor_event &ev )
@@ -201,6 +205,7 @@ private:
 			FSEventStreamInvalidate( fsevents_ );
 			FSEventStreamRelease( fsevents_ );
 		}
+		fsevents_ = nullptr;
 	}
 	
 	static void fsevents_callback( ConstFSEventStreamRef streamRef,
@@ -307,10 +312,12 @@ private:
 	public:
 		
 		PathEntry( const boost::filesystem::path &path,
-			   const std::string &regex_match )
-		: path( path ), regex_match( regex_match )
+				   const std::string &regex_match,
+				   uint64_t entry_id )
+		: path( path ), regex_match( regex_match ), entry_id( entry_id )
 		{}
 		
+		uint64_t				entry_id;
 		boost::filesystem::path path;
 		std::string 			regex_match;
 	};
@@ -319,16 +326,18 @@ private:
 	{
 	public:
 		
-		FileEntry( const boost::filesystem::path &path )
-		: path( path )
+		FileEntry( const boost::filesystem::path &path,
+				   uint64_t entry_id )
+		: path( path ), entry_id( entry_id )
 		{ }
 		
+		uint64_t				entry_id;
 		boost::filesystem::path path;
 	};
 	
 	std::mutex 								paths_mutex_;
 	
-	// ids
+	// ids, always > 0
 	uint64_t 								nextFileID_{2};
 	uint64_t								nextPathID_{1};
 	
@@ -348,8 +357,12 @@ private:
 			//return boost::filesystem::hash_value( p );
 		}
 	};
-	std::unordered_multimap<boost::filesystem::path, PathEntry*, path_hash> pathsMmap_;
+	
 	std::unordered_multimap<boost::filesystem::path, FileEntry*, path_hash> filesMmap_;
+	
+	// TODO REMOVE THIS, NOT NEEDED
+	// TODO should be replaced w/ a global target set
+	std::unordered_multimap<boost::filesystem::path, PathEntry*, path_hash> pathsMmap_;
 	
 	bool 									run_{false};
 	CFRunLoopRef 							runloop_;

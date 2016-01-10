@@ -14,7 +14,10 @@ class WatchedObject;
 class WatchedFile;
 class WatchedPath;
 	
-typedef std::function<void ( const std::vector<ci::fs::path>& )> WatchCallback;
+// expose internal event types
+typedef filemonitor::file_monitor_event::event_type EventType;
+	
+typedef std::function<void ( const ci::fs::path&, EventType type )> WatchCallback;
 
 //! Global object for managing live-asset monitoring.  Handles the asio service
 //! and passes along updates as needed
@@ -35,6 +38,8 @@ class FileWatcher {
 								  const std::string &regex,
 								  const WatchCallback &callback );
 
+	~FileWatcher() { mAsioWork.reset(); }
+	
   private:
 	
 	FileWatcher();
@@ -78,7 +83,7 @@ class WatchedObject : private ci::Noncopyable {
 	: mWatchId( wid ), mPath( path ), mCallback( callback ) { }
 	
 	//! causes it to be deleted from the file_manager service
-	virtual ~WatchedObject() { FileWatcher::instance()->removeWatch( mWatchId ); }
+	virtual ~WatchedObject();
 
 	//! when utilized the ID will always be > 0
 	uint64_t 		mWatchId;
@@ -97,6 +102,8 @@ class WatchedFile : public WatchedObject {
 	WatchedFile( WatchedFile &&other );
 	WatchedFile& operator=( WatchedFile &&rhs );
 	
+	WatchedFile() { }
+	
   protected:
 	WatchedFile( uint64_t wid,
 				 const ci::fs::path &path,
@@ -114,6 +121,8 @@ class WatchedPath : public WatchedObject {
   public:
 	WatchedPath( WatchedPath &&other );
 	WatchedPath& operator=( WatchedPath &&rhs );
+	
+	WatchedPath() { }
 	
 	std::string const getRegex() { return mRegexMatch; }
 

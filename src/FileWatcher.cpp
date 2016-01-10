@@ -62,7 +62,7 @@ WatchedPath FileWatcher::watchPath( const fs::path &path,
 
 void FileWatcher::removeWatch( uint64_t wid )
 {
-	// TODO remove
+
 	int r = instance()->mRegisteredCallbacks.erase( wid );
 	
 	CI_ASSERT( r == 1 );
@@ -80,15 +80,41 @@ void FileWatcher::updateCallback( uint64_t wid, const WatchCallback &callback )
 void FileWatcher::update()
 {
 	// TODO do asio stuff
+	mIoService.poll();
 }
 
 void FileWatcher::fileEventHandler( const boost::system::error_code &ec,
 								    const filemonitor::file_monitor_event &ev )
 {
 	// TODO do stuff
+	cout << "EC: " << ec << endl;
+	cout << "EV: " << ev << endl << endl;
+	
+	// re-process if no error
+	if( ! ec && ev.type != filemonitor::file_monitor_event::null )
+	{
+		auto it = mRegisteredCallbacks.find( ev.id );
+		CI_ASSERT( it != mRegisteredCallbacks.end() );
+		it->second( ev.path, ev.type );
+	} else {
+		// TODO some error handling
+	}
+	
 	
 	// add the next handler
 	mFileMonitor->async_monitor( std::bind( &FileWatcher::fileEventHandler, this, std::placeholders::_1, std::placeholders::_2 ) );
+}
+	
+// ----------------------------------------------------------------------------------------------------
+// MARK: - WatchedObject
+// ----------------------------------------------------------------------------------------------------
+WatchedObject::~WatchedObject()
+{
+	// mWatchID of 0 means we're a dead object
+	if( mWatchId > 0 ) {
+		FileWatcher::instance()->removeWatch( mWatchId );
+	}
+	cout << "Deconstructor called." << endl;
 }
 
 // ----------------------------------------------------------------------------------------------------
