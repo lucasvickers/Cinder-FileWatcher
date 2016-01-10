@@ -1,8 +1,8 @@
-# cinder-asio-file-monitor
+# Cinder-FileMonitor
 ASIO file monitor for cinder
 
 DEV NOTES:
-Initial work was done to support polling and kqueue's.  kqueues support direct file changes.  After conversations w/ Rich and Andrew, it was realized we needed support for both files and folders.
+Initial work was done to support polling and kqueue's.  kqueues support direct file changes.  After conversations, it was realized we needed support for both files and folders.
 
 KQueues: These work by opening up direct handle ids that are associated with files.  We then poll to see if any of them change.  This is very streamlined regarding file monitoring, but this can't monitor folders or folder sub-content.
 
