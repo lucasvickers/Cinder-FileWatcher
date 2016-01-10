@@ -51,6 +51,7 @@ WatchedPath FileWatcher::watchPath( const fs::path &path,
 									const std::string &regex,
 									const WatchCallback &callback )
 {
+	CI_ASSERT_MSG( false, "Functionality not yet supported." );
 	uint64_t wid = instance()->mFileMonitor->add_path( path, regex );
 	WatchedPath obj = WatchedPath( wid , path, regex, callback );
 	auto it = instance()->mRegisteredCallbacks.insert( std::pair<uint64_t, WatchCallback>( wid, obj.mCallback ) );
@@ -110,11 +111,13 @@ void FileWatcher::fileEventHandler( const boost::system::error_code &ec,
 // ----------------------------------------------------------------------------------------------------
 WatchedObject::~WatchedObject()
 {
+	cout << "Destructor called";
 	// mWatchID of 0 means we're a dead object
 	if( mWatchId > 0 ) {
 		FileWatcher::instance()->removeWatch( mWatchId );
+		cout <<", and removed a watch";
 	}
-	cout << "Deconstructor called." << endl;
+	cout << "." << endl;
 }
 
 // ----------------------------------------------------------------------------------------------------

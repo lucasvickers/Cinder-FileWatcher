@@ -183,7 +183,7 @@ private:
 		}
 		
 		while( ! runloop_ ) {
-			// TODO yield and let the callback do the work?
+			// TODO yield and let the callback do the work?  Why is this here?
 			std::this_thread::yield();
 		}
 		

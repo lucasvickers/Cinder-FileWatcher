@@ -65,6 +65,18 @@ class FileWatcher {
 };
 
 
+template <typename KeyT, typename ContainerT>
+class WatchedMap : public std::map<KeyT, ContainerT> {
+	// TODO add routines to make accessing a bit cleaner
+};
+	
+template <typename KeyT>
+using WatchedFileMap = WatchedMap<KeyT, WatchedFile>;
+	
+template <typename KeyT>
+using WatchedPathMap = WatchedMap<KeyT, WatchedPath>;
+
+	
 class WatchedObject : private ci::Noncopyable {
 						  
   public:
