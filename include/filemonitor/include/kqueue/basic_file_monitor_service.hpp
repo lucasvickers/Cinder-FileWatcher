@@ -1,8 +1,3 @@
-//
-// Distributed under the Boost Software License, Version 1.0. (See accompanying
-// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-//
-
 #pragma once
 
 #include "file_monitor_impl.hpp"
@@ -16,18 +11,18 @@ namespace filemonitor {
 
 template <typename FileMonitorImplementation = file_monitor_impl>
 class basic_file_monitor_service
-: public boost::asio::io_service::service
+	: public boost::asio::io_service::service
 {
 public:
 	static boost::asio::io_service::id id;
-	
+
 	explicit basic_file_monitor_service( boost::asio::io_service &io_service )
-	: boost::asio::io_service::service( io_service ),
-	async_monitor_work_( new boost::asio::io_service::work( async_monitor_io_service_ ) ),
-	async_monitor_thread_( boost::bind( &boost::asio::io_service::run, &async_monitor_io_service_ ) )
+		: boost::asio::io_service::service( io_service ),
+		async_monitor_work_( new boost::asio::io_service::work( async_monitor_io_service_ ) ),
+		async_monitor_thread_( boost::bind( &boost::asio::io_service::run, &async_monitor_io_service_ ) )
 	{
 	}
-	
+
 	~basic_file_monitor_service()
 	{
 		// The async_monitor thread will finish when mAsync_monitor_work is reset as all asynchronous
@@ -42,9 +37,9 @@ public:
 		// instance properties which don't exist anymore).
 		async_monitor_thread_.join();
 	}
-	
-	typedef boost::shared_ptr<FileMonitorImplementation> implementation_type;
-	
+
+    typedef boost::shared_ptr<FileMonitorImplementation> implementation_type;
+
 	void construct( implementation_type &impl )
 	{
 		impl.reset( new FileMonitorImplementation() );
@@ -58,19 +53,29 @@ public:
 		
 		impl.reset();
 	}
-	
-	void add_file( implementation_type &impl, const boost::filesystem::path &path )
+
+	void add_file( implementation_type &impl, const std::string &filename )
 	{
-		if ( ! boost::filesystem::is_regular_file( path ) ) {
-			throw std::invalid_argument( "boost::asio::basic_file_monitor_service::add_file: " +
-										 path.string() + " is not a valid file entry");
+		if ( ! boost::filesystem::is_regular_file( filename ) ) {
+			throw std::invalid_argument("boost::asio::basic_file_monitor_service::add_file: " +
+										filename + " is not a valid file entry");
 		}
-		impl->add_file( path );
+		
+		int event_fd = ::open( filename.c_str(), O_EVTONLY );
+		if( event_fd < 0 ) {
+			boost::system::system_error e( boost::system::error_code( errno, boost::system::get_system_category() ),
+										   "boost::asio::file_monitor_impl::add_file: open failed" );
+			boost::throw_exception( e );
+		}
+		
+		impl->add_file( filename, event_fd );
 	}
 	
-	void remove_file( implementation_type &impl, const boost::filesystem::path &path )
+	void remove_file( implementation_type &impl, const std::string &filename )
 	{
-		impl->remove_file( path );
+		// Removing the file from the implementation will close the associated file handle.
+		// Closing the file handle will make kevent() clear corresponding events.
+		impl->remove_file( filename );
 	}
 	
 	/**
@@ -86,10 +91,10 @@ public:
 	{
 	public:
 		monitor_operation( implementation_type &impl, boost::asio::io_service &io_service, Handler handler )
-		: impl_( impl ),
-		io_service_( io_service ),
-		work_( io_service ),
-		handler_( handler )
+			: impl_( impl ),
+			io_service_( io_service ),
+			work_( io_service ),
+			handler_( handler )
 		{
 		}
 		
@@ -133,10 +138,10 @@ private:
 	boost::scoped_ptr<boost::asio::io_service::work> async_monitor_work_;
 	std::thread async_monitor_thread_;
 };
-
+	
 template <typename FileMonitorImplementation>
 boost::asio::io_service::id basic_file_monitor_service<FileMonitorImplementation>::id;
-	
+
 } // filemonitor namespace
 
 

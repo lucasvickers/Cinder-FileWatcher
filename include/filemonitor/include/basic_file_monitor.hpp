@@ -1,8 +1,3 @@
-//
-// Distributed under the Boost Software License, Version 1.0. (See accompanying
-// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-//
-
 #pragma once
 
 #include <boost/asio.hpp>
@@ -24,13 +19,16 @@ struct file_monitor_event
 	};
 	
 	file_monitor_event()
-	: type( null ) { }
+	: type( null ), id( 0 )
+	{ }
 	
-	file_monitor_event( const boost::filesystem::path &p, event_type t )
-	: path( p ), type( t ) { }
+	file_monitor_event( const boost::filesystem::path &p, event_type t, uint64_t id )
+	: path( p ), type( t ), id( id )
+	{ }
 	
 	boost::filesystem::path path;
-	event_type type;
+	event_type 				type;
+	uint64_t 				id;
 };
 
 inline std::ostream& operator << ( std::ostream& os, const file_monitor_event &ev )
@@ -59,14 +57,19 @@ public:
 	{
 	}
 	
-	void add_file( const boost::filesystem::path &path )
+	uint64_t add_file( const boost::filesystem::path &file )
 	{
-		this->service.add_file( this->implementation, path );
+		return this->service.add_file( this->implementation, file );
 	}
-
-	void remove_file( const boost::filesystem::path &path )
+	
+	uint64_t add_path( const boost::filesystem::path &path, const std::string &regex_match )
 	{
-		this->service.remove_file( this->implementation, path );
+		return this->service.add_path( this->implementation, path, regex_match );
+	}
+	
+	void remove( uint64_t id )
+	{
+		this->service.remove( this->implementation, id );
 	}
 	
 	file_monitor_event monitor()

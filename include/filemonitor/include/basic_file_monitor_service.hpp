@@ -1,16 +1,22 @@
-//
-// Distributed under the Boost Software License, Version 1.0. (See accompanying
-// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-//
-
 #pragma once
 
-#include "file_monitor_impl.hpp"
+#if defined(_WIN32) || defined(__WIN32__) || defined(WIN32)
+#  include "windows/file_monitor_impl.hpp"
+#elif defined(__APPLE__) && defined(__MACH__)
+#  include "fsevents/file_monitor_impl.hpp"
+#else
+// fallback method
+#  include "polling/file_monitor_impl.hpp"
+#endif
+
 
 #include <boost/asio.hpp>
 #include <boost/bind.hpp>
 #include <boost/filesystem.hpp>
-#include <boost/scoped_ptr.hpp>
+#include <boost/scoped_ptr.hpp>			// TODO check need of scoped_ptr
+
+// TODO move to cinder's asio
+//#include "asio/asio.hpp"
 
 namespace filemonitor {
 
@@ -59,18 +65,27 @@ public:
 		impl.reset();
 	}
 	
-	void add_file( implementation_type &impl, const boost::filesystem::path &path )
+	uint64_t add_path( implementation_type &impl, const boost::filesystem::path &path, const std::string& regex_match )
 	{
-		if ( ! boost::filesystem::is_regular_file( path ) && ! boost::filesystem::is_directory( path ) ) {
+		if ( ! boost::filesystem::is_directory( path ) ) {
 			throw std::invalid_argument("boost::asio::basic_file_monitor_service::add_file: \"" +
 										path.string() + "\" is not a valid file or directory entry");
 		}
-		impl->add_file( path );
+		return impl->add_path( path, regex_match );
 	}
 	
-	void remove_file( implementation_type &impl, const boost::filesystem::path &path )
+	uint64_t add_file( implementation_type &impl, const boost::filesystem::path &path )
 	{
-		impl->remove_file( path );
+		if ( ! boost::filesystem::is_regular_file( path ) ) {
+			throw std::invalid_argument("boost::asio::basic_file_monitor_service::add_file: \"" +
+										path.string() + "\" is not a valid file or directory entry");
+		}
+		return impl->add_file( path );
+	}
+
+	void remove( implementation_type &impl, uint64_t id )
+	{
+		impl->remove( id );
 	}
 	
 	/**
@@ -109,10 +124,10 @@ public:
 		}
 		
 	private:
-		boost::weak_ptr<FileMonitorImplementation> impl_;
-		boost::asio::io_service &io_service_;
-		boost::asio::io_service::work work_;
-		Handler handler_;
+		boost::weak_ptr<FileMonitorImplementation> 	impl_;
+		boost::asio::io_service 					&io_service_;
+		boost::asio::io_service::work 				work_;
+		Handler 									handler_;
 	};
 	
 	/**
@@ -129,9 +144,9 @@ private:
 	{
 	}
 	
-	boost::asio::io_service async_monitor_io_service_;
-	boost::scoped_ptr<boost::asio::io_service::work> async_monitor_work_;
-	std::thread async_monitor_thread_;
+	boost::asio::io_service 							async_monitor_io_service_;
+	boost::scoped_ptr<boost::asio::io_service::work> 	async_monitor_work_;
+	std::thread 										async_monitor_thread_;
 };
 
 template <typename FileMonitorImplementation>
