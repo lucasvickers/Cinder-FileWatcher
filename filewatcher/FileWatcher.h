@@ -9,10 +9,10 @@
 #include "file_monitor.hpp"
 
 namespace filewatcher {
-
-//typedef std::shared_ptr<class WatchedObject> WatchedObjectRef;
-//typedef std::shared_ptr<class WatchedFile> WatchedFileRef;
-//typedef std::shared_ptr<class WatchedPath> WatchedPathRef;
+	
+class WatchedObject;
+class WatchedFile;
+class WatchedPath;
 	
 typedef std::function<void ( const std::vector<ci::fs::path>& )> WatchCallback;
 
@@ -20,32 +20,29 @@ typedef std::function<void ( const std::vector<ci::fs::path>& )> WatchCallback;
 //! and passes along updates as needed
 class FileWatcher {
 
-  //! allow WatchedObjects to remove themselves upon deletion
+  //! allow WatchedObjects access to removeWatch and updateCallback
   friend class WatchedObject;
 	
   public:
 	static FileWatcher *instance();
 
 	//! Creates a watch of a single file
-	static WatchedFileRef watchFile( const ci::fs::path &file,
-									 const WatchCallback &callback );
+	static WatchedFile watchFile( const ci::fs::path &file,
+								  const WatchCallback &callback );
 	
 	//! Creates a watch of a directory and subdirectories given a regex match
-	static WatchedPathRef watchPath( const ci::fs::path &path,
-									 const std::string &regex,
-									 const WatchCallback &callback );
-	
-	// TODO enable this once I understand the architecture
-	//void watch( const WatchedObjectRef &watch );
+	static WatchedPath watchPath( const ci::fs::path &path,
+								  const std::string &regex,
+								  const WatchCallback &callback );
 
   private:
 	
 	FileWatcher();
 	
-	// TODO how will this work again?  this will be called from the constructor
-	//void registerWatch( WatchedObjectRef obj );
-	// deconstructors will call this
-	void removeWatch( WatchedObject *obj );
+	//! WatchedObject deconstructors will call this
+	void removeWatch( uint64_t wid );
+	
+	void updateCallback( uint64_t wid, const WatchCallback &callback );
 
 	//! Updates occur on asio, but we'll synchronize callbacks to ci::update loop.
 	//! (this could change if we want it to)
@@ -55,7 +52,7 @@ class FileWatcher {
 	void fileEventHandler( const boost::system::error_code &ec,
 						   const filemonitor::file_monitor_event &ev );
 	
-	std::map<uint64_t, WatchedObjectRef> 			mRegisteredWatches;
+	std::map<uint64_t, WatchCallback> 				mRegisteredCallbacks;
 
 	boost::asio::io_service 						mIoService;
 	std::unique_ptr<filemonitor::file_monitor> 		mFileMonitor;
@@ -63,73 +60,69 @@ class FileWatcher {
 };
 
 
-class WatchedObject : public std::enable_shared_from_this<WatchedObject> {
-		
-  //! allow FileWatcher to have management
-  friend FileWatcher;
-		
+class WatchedObject : private ci::Noncopyable {
+						  
   public:
 	uint64_t getId() const { return mWatchId; }
 	ci::fs::path getPath() const { return mPath; }
-
+	void updateCallback( const WatchCallback &callback );
+						  
   protected:
-	// TODO need to study the noncopyable stuff before I understand how to architect this
-	// TODO probably also need to make the container structure
-	//virtual void registerWatch() = 0;
-	//virtual void removeWatch() = 0;
-	virtual void callback() = 0;
-	
-	// TODO calls registerWatch
-	//virtual WatchedObject( uint64_t uid );
+
 	WatchedObject()
-		: mWatchId( 0 ) {}
+	: mWatchId( 0 ) { }
+	
+	WatchedObject( uint64_t wid,
+				  const ci::fs::path &path,
+				  const WatchCallback &callback )
+	: mWatchId( wid ), mPath( path ), mCallback( callback ) { }
 	
 	//! causes it to be deleted from the file_manager service
-	virtual ~WatchedObject() {
-		FileWatcher::instance()->removeWatch( this );
-	}
+	virtual ~WatchedObject() { FileWatcher::instance()->removeWatch( mWatchId ); }
 
 	//! when utilized the ID will always be > 0
 	uint64_t 		mWatchId;
 	ci::fs::path 	mPath;
+	WatchCallback	mCallback;
+
 };
 
 //! Used to watch a single file
-class WatchedFile : public WatchedObject,
-					private ci::Noncopyable {
-						
-  //! allow FileWatcher management
-  friend class FileWatcher;
-						
+class WatchedFile : public WatchedObject {
+
+	//! Allow FileWatcher access to constructors
+	friend class FileWatcher;
+	
+  public:
+	WatchedFile( WatchedFile &&other );
+	WatchedFile& operator=( WatchedFile &&rhs );
+	
   protected:
 	WatchedFile( uint64_t wid,
 				 const ci::fs::path &path,
-				 const WatchCallback &callback );
-						
-	void callback() override;
-						
-	WatchCallback	mCallback;
+				 const WatchCallback &callback )
+	: WatchedObject( wid, path, callback ) { }
+
 };
 
 //! Used to watch a directory structure via regex
-class WatchedPath : public WatchedObject,
-					private ci::Noncopyable {
-
-  //! allow FileWatcher to have management
-  friend FileWatcher;
-  
+class WatchedPath : public WatchedObject {
+	
+	//! Allow FileWatcher access to constructors
+	friend class FileWatcher;
+	
   public:
+	WatchedPath( WatchedPath &&other );
+	WatchedPath& operator=( WatchedPath &&rhs );
+	
 	std::string const getRegex() { return mRegexMatch; }
 
   protected:
 	WatchedPath( uint64_t wid,
 				 const ci::fs::path &path,
 				 const std::string &regexMatch,
-				 const WatchCallback &callback );
-
-	void callback() override;
-						
-	WatchCallback	mCallback;
+				 const WatchCallback &callback )
+	: WatchedObject( wid, path, callback ), mRegexMatch( regexMatch ) { }
 						
 	std::string 	mRegexMatch;
 };

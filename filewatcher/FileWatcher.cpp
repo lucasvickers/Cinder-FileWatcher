@@ -34,43 +34,52 @@ FileWatcher *FileWatcher::instance()
 	return &sInstance;
 }
 
-WatchedFileRef FileWatcher::watchFile( const fs::path &file,
-									   const WatchCallback &callback )
+WatchedFile FileWatcher::watchFile( const fs::path &file,
+									const WatchCallback &callback )
 {
-	uint64_t id = instance()->mFileMonitor->add_file( file );
-	WatchedFileRef obj = std::make_shared<WatchedFile>( WatchedFile( id , file, callback ) );
-	auto it = instance()->mRegisteredWatches.insert( std::pair<uint64_t, WatchedObjectRef>( id, obj ) );
+	uint64_t wid = instance()->mFileMonitor->add_file( file );
+	WatchedFile obj = WatchedFile( wid , file, callback );
+	// register the callback
+	auto it = instance()->mRegisteredCallbacks.insert( std::pair<uint64_t, WatchCallback>( wid, obj.mCallback ) );
 	
 	// double check item didn't exist, should be impossible
 	CI_ASSERT( it.second );
 	return obj;
 }
 	
-WatchedPathRef FileWatcher::watchPath( const fs::path &path,
-									   const std::string &regex,
-									   const WatchCallback &callback )
+WatchedPath FileWatcher::watchPath( const fs::path &path,
+									const std::string &regex,
+									const WatchCallback &callback )
 {
-	uint64_t id = instance()->mFileMonitor->add_path( path, regex );
-	WatchedPathRef obj = std::make_shared<WatchedPath>( WatchedPath( id , path, regex, callback ) );
-	auto it = instance()->mRegisteredWatches.insert( std::pair<uint64_t, WatchedObjectRef>( id, obj ) );
+	uint64_t wid = instance()->mFileMonitor->add_path( path, regex );
+	WatchedPath obj = WatchedPath( wid , path, regex, callback );
+	auto it = instance()->mRegisteredCallbacks.insert( std::pair<uint64_t, WatchCallback>( wid, obj.mCallback ) );
 	
 	// double check item didn't exist, should be impossible
 	CI_ASSERT( it.second );
 	return obj;
 }
 
-void FileWatcher::removeWatch( WatchedObject *obj )
+void FileWatcher::removeWatch( uint64_t wid )
 {
 	// TODO remove
-	int r = instance()->mRegisteredWatches.erase( obj->getId() );
+	int r = instance()->mRegisteredCallbacks.erase( wid );
 	
 	CI_ASSERT( r == 1 );
-	mFileMonitor->remove( obj->getId() );
+	mFileMonitor->remove( wid );
 }
+	
+void FileWatcher::updateCallback( uint64_t wid, const WatchCallback &callback )
+{
+	int r = instance()->mRegisteredCallbacks.erase( wid );
+	CI_ASSERT( r == 1 );
+	instance()->mRegisteredCallbacks.insert( std::pair<uint64_t, WatchCallback>( wid, callback ) );
+}
+	
 
 void FileWatcher::update()
 {
-
+	// TODO do asio stuff
 }
 
 void FileWatcher::fileEventHandler( const boost::system::error_code &ec,
@@ -85,32 +94,59 @@ void FileWatcher::fileEventHandler( const boost::system::error_code &ec,
 // ----------------------------------------------------------------------------------------------------
 // MARK: - WatchedFile
 // ----------------------------------------------------------------------------------------------------
-WatchedFile::WatchedFile( uint64_t wid,
-						  const ci::fs::path &path,
-						  const WatchCallback &callback )
+WatchedFile::WatchedFile( WatchedFile &&other )
 {
-	//TODO anything beyond copy?
-}
+	mWatchId = other.mWatchId;
+	mPath = other.mPath;
+	mCallback = other.mCallback;
 	
-void WatchedFile::callback()
+	other.mWatchId = 0;
+	other.mPath = "";
+	other.mCallback = nullptr;
+}
+
+WatchedFile& WatchedFile::operator=( WatchedFile &&rhs )
 {
-	//TODO can this be in the base class?
-}
+	mWatchId = rhs.mWatchId;
+	mPath = rhs.mPath;
+	mCallback = rhs.mCallback;
 	
+	rhs.mWatchId = 0;
+	rhs.mPath = "";
+	rhs.mCallback = nullptr;
+	
+	return *this;
+}
+
 // ----------------------------------------------------------------------------------------------------
 // MARK: - WatchedPath
 // ----------------------------------------------------------------------------------------------------
-WatchedPath::WatchedPath( uint64_t wid,
-						  const ci::fs::path &path,
-						  const std::string &regexMatch,
-						  const WatchCallback &callback )
+WatchedPath::WatchedPath( WatchedPath &&other )
 {
-	//TODO anything beyond copy?
-}
+	mWatchId = other.mWatchId;
+	mPath = other.mPath;
+	mCallback = other.mCallback;
+	mRegexMatch = other.mRegexMatch;
 	
-void WatchedPath::callback()
+	other.mWatchId = 0;
+	other.mPath = "";
+	other.mCallback = nullptr;
+	other.mRegexMatch = "";
+}
+
+WatchedPath& WatchedPath::operator=( WatchedPath &&rhs )
 {
-	//TODO can this be in the base class?
+	mWatchId = rhs.mWatchId;
+	mPath = rhs.mPath;
+	mCallback = rhs.mCallback;
+	mRegexMatch = rhs.mRegexMatch;
+	
+	rhs.mWatchId = 0;
+	rhs.mPath = "";
+	rhs.mCallback = nullptr;
+	rhs.mRegexMatch = "";
+	
+	return *this;
 }
 	
 } // namespace filewatcher
