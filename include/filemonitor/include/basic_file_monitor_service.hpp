@@ -13,7 +13,6 @@
 #include <boost/asio.hpp>
 #include <boost/bind.hpp>
 #include <boost/filesystem.hpp>
-#include <boost/scoped_ptr.hpp>			// TODO check need of scoped_ptr
 
 // TODO move to cinder's asio
 //#include "asio/asio.hpp"
@@ -49,6 +48,7 @@ public:
 		async_monitor_thread_.join();
 	}
 	
+	// TODO move to std
 	typedef boost::shared_ptr<FileMonitorImplementation> implementation_type;
 	
 	void construct( implementation_type &impl )
@@ -145,7 +145,8 @@ private:
 	}
 	
 	boost::asio::io_service 							async_monitor_io_service_;
-	boost::scoped_ptr<boost::asio::io_service::work> 	async_monitor_work_;
+	//! note: migrated from scoped_ptr.  remove comment if this works
+	std::unique_ptr<boost::asio::io_service::work> 		async_monitor_work_;
 	std::thread 										async_monitor_thread_;
 };
 

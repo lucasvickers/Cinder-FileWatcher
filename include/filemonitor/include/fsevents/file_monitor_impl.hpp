@@ -4,15 +4,13 @@
 #include <boost/filesystem.hpp>					// TODO migrate to standard C++ / cinder if possible
 
 #include <CoreServices/CoreServices.h>
-#include <deque>
 #include <thread>
-#include <functional>
-#include <time.h>
+#include <regex>
 
 namespace filemonitor {
 	
 class file_monitor_impl :
-public boost::enable_shared_from_this<file_monitor_impl>
+public std::enable_shared_from_this<file_monitor_impl>
 {
 	
 public:
@@ -37,10 +35,8 @@ public:
 		
 		auto iter = paths_.emplace( id, PathEntry( path, regex_match, id ) );
 		assert( iter.second );
-		// iter.first is the multimap iter. iter is filesystem::path, pointer to the PathEntry
-		pathsMmap_.insert( std::make_pair( path, &(iter.first->second) ) );
 		
-		assert( pathsMmap_.size() == paths_.size() );
+		increment_targets( path );
 		
 		stop_fsevents();
 		start_fsevents();
@@ -62,6 +58,8 @@ public:
 		
 		assert( filesMmap_.size() == files_.size() );
 		
+		increment_targets( file );
+	
 		stop_fsevents();
 		start_fsevents();
 		
@@ -72,16 +70,18 @@ public:
 	{
 		std::lock_guard<std::mutex> lock( paths_mutex_ );
 		
+		boost::filesystem::path path;
+
 		// remove from containers
 		if( id % 2 == 0 ) {
 			// even is file
 			removeEntry<decltype( files_ ), decltype( filesMmap_ )>( id, files_, filesMmap_ );
-			assert( filesMmap_.size() == files_.size() );
 		} else {
 			// odd is path
-			removeEntry<decltype( paths_ ), decltype( pathsMmap_ )>( id, paths_, pathsMmap_ );
-			assert( pathsMmap_.size() == paths_.size() );
+			removeEntry<decltype( paths_ )>( id, paths_ );
 		}
+		
+		decrement_targets( path );
 		
 		stop_fsevents();
 		start_fsevents();
@@ -113,27 +113,31 @@ public:
 	
 	void verify_event( const boost::filesystem::path &path, file_monitor_event::event_type type )
 	{
-		// NEED: path -> multiple path entries, file -> multiple file entries
-		// TODO move onto worker thread
-		// TODO implement this check
+		if( ! run_ ) {
+			return;
+		}
 		
+		// TODO move onto worker thread ?
+		
+		//! check for exact file matches, streamlined map search to keep complexity minimal
 		auto range = filesMmap_.equal_range( path );
 		for( auto it = range.first; it != range.second; ++it ) {
 			pushback_event( file_monitor_event( path, type, it->second->entry_id ) );
 		}
 		
-		// TODO check regex's
-		
+		//! check every regex possibility, which is computationally more expensive
+		for( const auto &it : paths_ ) {
+			if( std::regex_match( path.string(), it.second.regex_match ) ) {
+				pushback_event( file_monitor_event( path, type, it.second.entry_id ) );
+			}
+		}
 	}
 	
 	void pushback_event( const file_monitor_event &ev )
 	{
 		std::lock_guard<std::mutex> lock( events_mutex_ );
-		// TODO move run into verify_event
-		if( run_ ) {
-			events_.push_back( ev );
-			events_cond_.notify_all();
-		}
+		events_.push_back( ev );
+		events_cond_.notify_all();
 	}
 	
 private:
@@ -149,16 +153,11 @@ private:
 		// We assume that there are no duplicates between pathsMmap and filesMmap
 		//  since one is only files and one only folders
 		
-		CFMutableArrayRef allPaths = CFArrayCreateMutable( kCFAllocatorDefault, pathsMmap_.size() + filesMmap_.size(), &kCFTypeArrayCallBacks );
+		CFMutableArrayRef allPaths = CFArrayCreateMutable( kCFAllocatorDefault, allTargetsMap_.size(), &kCFTypeArrayCallBacks );
 
-		// TODO in C++14 move to templaced lambda function
-		for( auto path : pathsMmap_ ) {
-			 CFStringRef cfstr = CFStringCreateWithCString( kCFAllocatorDefault, path.first.string().c_str(), kCFStringEncodingUTF8 );
-			 CFArrayAppendValue( allPaths, cfstr );
-			 CFRelease(cfstr);
-		}
-		for( auto file : filesMmap_ ) {
-			CFStringRef cfstr = CFStringCreateWithCString( kCFAllocatorDefault, file.first.string().c_str(), kCFStringEncodingUTF8 );
+		for( const auto &path : allTargetsMap_ ) {
+			
+			CFStringRef cfstr = CFStringCreateWithCString( kCFAllocatorDefault, path.first.string().c_str(), kCFStringEncodingUTF8 );
 			CFArrayAppendValue( allPaths, cfstr );
 			CFRelease(cfstr);
 		}
@@ -180,11 +179,6 @@ private:
 			boost::system::system_error e( boost::system::error_code( errno, boost::system::get_system_category() ),
 										  "filemonitor::file_monitor_impl::init_fsevents: fsevents failed" );
 			boost::throw_exception(e);
-		}
-		
-		while( ! runloop_ ) {
-			// TODO yield and let the callback do the work?  Why is this here?
-			std::this_thread::yield();
 		}
 		
 		FSEventStreamScheduleWithRunLoop( fsevents_, runloop_, kCFRunLoopDefaultMode );
@@ -270,6 +264,7 @@ private:
 	
 	bool running()
 	{
+		// TODO fix this lock, makes no sense
 		std::lock_guard<std::mutex> lock( work_thread_mutex_ );
 		return run_;
 	}
@@ -281,6 +276,15 @@ private:
 		run_ = false;
 		CFRunLoopStop( runloop_ ); // exits the thread
 		runloop_cond_.notify_all();
+	}
+	
+	template<typename mapType>
+	void removeEntry( uint64_t id, mapType &idMap )
+	{
+		auto iter = idMap.find( id );
+		assert( iter != idMap.end() );
+		
+		idMap.erase( iter );
 	}
 	
 	template<typename mapType, typename mmapType>
@@ -305,6 +309,31 @@ private:
 		// do deletes
 		idMap.erase( iter );
 		pathMmap.erase( rangeIter );
+		
+		assert( filesMmap_.size() == files_.size() );
+	}
+	
+	void increment_targets( const boost::filesystem::path &path )
+	{
+		auto it = allTargetsMap_.find( path );
+		if( it != allTargetsMap_.end() ) {
+			it->second += 1;
+		} else {
+			auto it = allTargetsMap_.insert( std::make_pair( path, 1 ) );
+			assert( it.second );
+		}
+	}
+
+	void decrement_targets( const boost::filesystem::path &path )
+	{
+		auto it = allTargetsMap_.find( path );
+		assert( it != allTargetsMap_.end() );
+		
+		if( it->second == 1 ) {
+			allTargetsMap_.erase( it );
+		} else {
+			it->second -= 1;
+		}
 	}
 	
 	class PathEntry
@@ -319,7 +348,7 @@ private:
 		
 		uint64_t				entry_id;
 		boost::filesystem::path path;
-		std::string 			regex_match;
+		std::regex 				regex_match;
 	};
 	
 	class FileEntry
@@ -358,11 +387,13 @@ private:
 		}
 	};
 	
+	// TODO explore maps vs sets performance
+	
+	//! used for quick lookup of file specific activity
 	std::unordered_multimap<boost::filesystem::path, FileEntry*, path_hash> filesMmap_;
 	
-	// TODO REMOVE THIS, NOT NEEDED
-	// TODO should be replaced w/ a global target set
-	std::unordered_multimap<boost::filesystem::path, PathEntry*, path_hash> pathsMmap_;
+	//! used to keep track of all watched targets, both file and paths
+	std::unordered_map<boost::filesystem::path, uint32_t, path_hash> 		allTargetsMap_;
 	
 	bool 									run_{false};
 	CFRunLoopRef 							runloop_;

@@ -25,6 +25,7 @@ FileWatcher::FileWatcher()
 	mFileMonitor->async_monitor( std::bind( &FileWatcher::fileEventHandler, this, std::placeholders::_1, std::placeholders::_2 ) );
 	
 	// sync to udpate
+	// TODO support non cinder context
 	app::App::get()->getSignalUpdate().connect( bind( &FileWatcher::update, this ) );
 }
 	
