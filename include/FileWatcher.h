@@ -6,7 +6,7 @@
 #include "cinder/Noncopyable.h"
 
 // TODO possibly forward declare and move to cpp.  Would avoid exposing any .hpp stuff
-#include "file_monitor.hpp"
+#include "FileMonitor.hpp"
 
 namespace filewatcher {
 	
@@ -15,7 +15,7 @@ class WatchedFile;
 class WatchedPath;
 	
 // expose internal event types
-typedef filemonitor::file_monitor_event::event_type EventType;
+typedef filemonitor::FileMonitorEvent::EventType EventType;
 	
 typedef std::function<void ( const ci::fs::path&, EventType type )> WatchCallback;
 
@@ -55,12 +55,12 @@ class FileWatcher {
 	
 	// TODO migrate away from boost error_codes?
 	void fileEventHandler( const boost::system::error_code &ec,
-						   const filemonitor::file_monitor_event &ev );
+						   const filemonitor::FileMonitorEvent &ev );
 	
 	std::map<uint64_t, WatchCallback> 				mRegisteredCallbacks;
 
 	boost::asio::io_service 						mIoService;
-	std::unique_ptr<filemonitor::file_monitor> 		mFileMonitor;
+	std::unique_ptr<filemonitor::FileMonitor> 		mFileMonitor;
 	std::unique_ptr<boost::asio::io_service::work>	mAsioWork;
 };
 

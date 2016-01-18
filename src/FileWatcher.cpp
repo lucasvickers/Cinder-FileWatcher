@@ -17,12 +17,12 @@ FileWatcher::FileWatcher()
 	// TODO move this into cinder's asio
 	
 	// setup our filemonitor asio service and link it to the internal cinder io_service
-	mFileMonitor = unique_ptr<filemonitor::file_monitor>( new filemonitor::file_monitor( mIoService ) );
+	mFileMonitor = unique_ptr<filemonitor::FileMonitor>( new filemonitor::FileMonitor( mIoService ) );
 	
 	mAsioWork = auto_ptr<boost::asio::io_service::work>( new boost::asio::io_service::work( mIoService ) );
 	
 	// prime the first handler
-	mFileMonitor->async_monitor( std::bind( &FileWatcher::fileEventHandler, this, std::placeholders::_1, std::placeholders::_2 ) );
+	mFileMonitor->asyncMonitor( std::bind( &FileWatcher::fileEventHandler, this, std::placeholders::_1, std::placeholders::_2 ) );
 	
 	// sync to udpate
 	// TODO support non cinder context
@@ -38,7 +38,7 @@ FileWatcher *FileWatcher::instance()
 WatchedFile FileWatcher::watchFile( const fs::path &file,
 									const WatchCallback &callback )
 {
-	uint64_t wid = instance()->mFileMonitor->add_file( file );
+	uint64_t wid = instance()->mFileMonitor->addFile( file );
 	WatchedFile obj = WatchedFile( wid , file, callback );
 	// register the callback
 	auto it = instance()->mRegisteredCallbacks.insert( std::pair<uint64_t, WatchCallback>( wid, obj.mCallback ) );
@@ -52,8 +52,7 @@ WatchedPath FileWatcher::watchPath( const fs::path &path,
 									const std::string &regex,
 									const WatchCallback &callback )
 {
-	CI_ASSERT_MSG( false, "Functionality not yet supported." );
-	uint64_t wid = instance()->mFileMonitor->add_path( path, regex );
+	uint64_t wid = instance()->mFileMonitor->addPath( path, regex );
 	WatchedPath obj = WatchedPath( wid , path, regex, callback );
 	auto it = instance()->mRegisteredCallbacks.insert( std::pair<uint64_t, WatchCallback>( wid, obj.mCallback ) );
 	
@@ -86,14 +85,14 @@ void FileWatcher::update()
 }
 
 void FileWatcher::fileEventHandler( const boost::system::error_code &ec,
-								    const filemonitor::file_monitor_event &ev )
+								    const filemonitor::FileMonitorEvent &ev )
 {
 	// TODO do stuff
 	cout << "EC: " << ec << endl;
 	cout << "EV: " << ev << endl << endl;
 	
 	// re-process if no error
-	if( ! ec && ev.type != filemonitor::file_monitor_event::null )
+	if( ! ec && ev.type != filemonitor::FileMonitorEvent::NONE )
 	{
 		auto it = mRegisteredCallbacks.find( ev.id );
 		CI_ASSERT( it != mRegisteredCallbacks.end() );
@@ -104,7 +103,7 @@ void FileWatcher::fileEventHandler( const boost::system::error_code &ec,
 	
 	
 	// add the next handler
-	mFileMonitor->async_monitor( std::bind( &FileWatcher::fileEventHandler, this, std::placeholders::_1, std::placeholders::_2 ) );
+	mFileMonitor->asyncMonitor( std::bind( &FileWatcher::fileEventHandler, this, std::placeholders::_1, std::placeholders::_2 ) );
 }
 	
 // ----------------------------------------------------------------------------------------------------
