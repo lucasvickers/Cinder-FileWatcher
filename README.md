@@ -1,13 +1,16 @@
 # Cinder-FileMonitor
 ASIO file monitor for cinder
 
-DEV NOTES:
-Initial work was done to support polling and kqueue's.  kqueues support direct file changes.  After conversations, it was realized we needed support for both files and folders.
+# Description
 
-KQueues: These work by opening up direct handle ids that are associated with files.  We then poll to see if any of them change.  This is very streamlined regarding file monitoring, but this can't monitor folders or folder sub-content.
+This tool allows for cross platform (eventually os x, windows, and linux) monitoring of both files and directories.  The interface allows for the monitoring of a single file, as well as the monitoring of a folder via a regex search string.
 
-FSevents: Takes a list of paths, either folders or files.  If a file, callback will occur on changes to that specific file.  If a folder, callbacks will occur on changes to all sub-folders and files.  The challenge is that you do not have knowledge of which watched folder triggered a callback.
+All callbacks occur in lambda functions.  Eventually this could get tied into the core of Cinder allowing for a concept of 'live resources'
 
-Windows: Very similar to FSevents except you can not target an individual file, only a directory.  This means you will always need to filter out the triggered events.
+# Details
 
-Putting it all together: It seems like we can easily have cross platform live file monitoring, but we can't guarantee consistent callback filtering.  i.e. watching a single file on OS X will only trigger callbacks upon modification of that file.  Watching a single file on Windows will trigger callbacks upon modification of anything in that same folder.
+Currently we only make a callback on ADDED, REMOVED, MODIFIED, and RENAMED events.  When an application modifies a file, multiple things can happen such as a timestamp changes before a file is modified.  I tried to only select the most important events to avoid spurious callbacks.
+
+# Examples
+
+See _samples/FileMonitor_

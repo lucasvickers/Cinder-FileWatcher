@@ -18,6 +18,7 @@
 		00B9955B1B128DF400A5C623 /* IOSurface.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 00B995591B128DF400A5C623 /* IOSurface.framework */; };
 		5323E6B20EAFCA74003A9687 /* CoreVideo.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5323E6B10EAFCA74003A9687 /* CoreVideo.framework */; };
 		5F6541D71C42DAC400B20E58 /* FileWatcher.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 5F6541D61C42DAC400B20E58 /* FileWatcher.cpp */; };
+		5F76DA211D051442001E3E4B /* FileMonitorImpl.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 5F76DA201D051442001E3E4B /* FileMonitorImpl.cpp */; };
 		8D11072F0486CEB800E47090 /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1058C7A1FEA54F0111CA2CBB /* Cocoa.framework */; };
 		B0FE4ED05D874E4E87D09C83 /* FileMonitorApp.cpp in Sources */ = {isa = PBXBuildFile; fileRef = CC17FBA054A64B44B702FA32 /* FileMonitorApp.cpp */; };
 		B1B6AA0E561B4CF4854790DA /* CinderApp.icns in Resources */ = {isa = PBXBuildFile; fileRef = ECC5084781FF438B97896359 /* CinderApp.icns */; };
@@ -39,10 +40,12 @@
 		5323E6B10EAFCA74003A9687 /* CoreVideo.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreVideo.framework; path = /System/Library/Frameworks/CoreVideo.framework; sourceTree = "<absolute>"; };
 		5F6541D51C42DAB900B20E58 /* FileWatcher.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = FileWatcher.h; path = ../../../include/FileWatcher.h; sourceTree = "<group>"; };
 		5F6541D61C42DAC400B20E58 /* FileWatcher.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = FileWatcher.cpp; path = ../../../src/FileWatcher.cpp; sourceTree = "<group>"; };
-		5F6541D81C4C6C3500B20E58 /* BasicFileMonitor.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = BasicFileMonitor.hpp; path = ../../../include/filemonitor/include/BasicFileMonitor.hpp; sourceTree = "<group>"; };
-		5F6541D91C4C6C3500B20E58 /* BasicFileMonitorService.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = BasicFileMonitorService.hpp; path = ../../../include/filemonitor/include/BasicFileMonitorService.hpp; sourceTree = "<group>"; };
-		5F6541DA1C4C6C3500B20E58 /* FileMonitor.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = FileMonitor.hpp; path = ../../../include/filemonitor/include/FileMonitor.hpp; sourceTree = "<group>"; };
-		5F6541DB1C4C6C5700B20E58 /* FileMonitorImpl.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = FileMonitorImpl.hpp; path = ../../../include/filemonitor/include/fsevents/FileMonitorImpl.hpp; sourceTree = "<group>"; };
+		5F76DA201D051442001E3E4B /* FileMonitorImpl.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = FileMonitorImpl.cpp; path = ../../../src/filemonitor/fsevents/FileMonitorImpl.cpp; sourceTree = "<group>"; };
+		5F76DA271D051FA7001E3E4B /* BasicFileMonitorService.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = BasicFileMonitorService.h; path = ../../../include/filemonitor/BasicFileMonitorService.h; sourceTree = "<group>"; };
+		5F76DA281D051FA7001E3E4B /* BasicFileMonitor.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = BasicFileMonitor.h; path = ../../../include/filemonitor/BasicFileMonitor.h; sourceTree = "<group>"; };
+		5F76DA291D051FA7001E3E4B /* FileMonitorEvent.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = FileMonitorEvent.h; path = ../../../include/filemonitor/FileMonitorEvent.h; sourceTree = "<group>"; };
+		5F76DA2A1D051FA7001E3E4B /* FileMonitor.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = FileMonitor.h; path = ../../../include/filemonitor/FileMonitor.h; sourceTree = "<group>"; };
+		5F76DA2B1D051FB4001E3E4B /* FileMonitorImpl.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = FileMonitorImpl.h; path = ../../../include/filemonitor/fsevents/FileMonitorImpl.h; sourceTree = "<group>"; };
 		8D1107320486CEB800E47090 /* FileMonitor.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = FileMonitor.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		9CC97CF4D7E84800BD5409AB /* Resources.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = Resources.h; path = ../include/Resources.h; sourceTree = "<group>"; };
 		ADACC515240045938ACF399D /* FileMonitor_Prefix.pch */ = {isa = PBXFileReference; lastKnownFileType = "\"\""; path = FileMonitor_Prefix.pch; sourceTree = "<group>"; };
@@ -177,6 +180,7 @@
 		5F6541CE1C42DA3700B20E58 /* filemonitor */ = {
 			isa = PBXGroup;
 			children = (
+				5F76DA181D0513DB001E3E4B /* source */,
 				5F6541CF1C42DA5400B20E58 /* include */,
 			);
 			name = filemonitor;
@@ -185,9 +189,10 @@
 		5F6541CF1C42DA5400B20E58 /* include */ = {
 			isa = PBXGroup;
 			children = (
-				5F6541D81C4C6C3500B20E58 /* BasicFileMonitor.hpp */,
-				5F6541D91C4C6C3500B20E58 /* BasicFileMonitorService.hpp */,
-				5F6541DA1C4C6C3500B20E58 /* FileMonitor.hpp */,
+				5F76DA271D051FA7001E3E4B /* BasicFileMonitorService.h */,
+				5F76DA281D051FA7001E3E4B /* BasicFileMonitor.h */,
+				5F76DA291D051FA7001E3E4B /* FileMonitorEvent.h */,
+				5F76DA2A1D051FA7001E3E4B /* FileMonitor.h */,
 				5F6541D31C42DA6D00B20E58 /* fsevents */,
 			);
 			name = include;
@@ -196,7 +201,23 @@
 		5F6541D31C42DA6D00B20E58 /* fsevents */ = {
 			isa = PBXGroup;
 			children = (
-				5F6541DB1C4C6C5700B20E58 /* FileMonitorImpl.hpp */,
+				5F76DA2B1D051FB4001E3E4B /* FileMonitorImpl.h */,
+			);
+			name = fsevents;
+			sourceTree = "<group>";
+		};
+		5F76DA181D0513DB001E3E4B /* source */ = {
+			isa = PBXGroup;
+			children = (
+				5F76DA191D0513F8001E3E4B /* fsevents */,
+			);
+			name = source;
+			sourceTree = "<group>";
+		};
+		5F76DA191D0513F8001E3E4B /* fsevents */ = {
+			isa = PBXGroup;
+			children = (
+				5F76DA201D051442001E3E4B /* FileMonitorImpl.cpp */,
 			);
 			name = fsevents;
 			sourceTree = "<group>";
@@ -266,6 +287,7 @@
 			files = (
 				5F6541D71C42DAC400B20E58 /* FileWatcher.cpp in Sources */,
 				B0FE4ED05D874E4E87D09C83 /* FileMonitorApp.cpp in Sources */,
+				5F76DA211D051442001E3E4B /* FileMonitorImpl.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

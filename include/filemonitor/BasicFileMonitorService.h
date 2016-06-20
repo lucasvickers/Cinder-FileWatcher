@@ -1,12 +1,33 @@
+/*
+ Copyright (c) 2016, Lucas Vickers - All rights reserved.
+ 
+ Redistribution and use in source and binary forms, with or without modification, are permitted provided that
+ the following conditions are met:
+ 
+ * Redistributions of source code must retain the above copyright notice, this list of conditions and
+ the following disclaimer.
+ * Redistributions in binary form must reproduce the above copyright notice, this list of conditions and
+ the following disclaimer in the documentation and/or other materials provided with the distribution.
+ 
+ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED
+ WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
+ PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR
+ ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED
+ TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ POSSIBILITY OF SUCH DAMAGE.
+ */
+
 #pragma once
 
 #if defined(_WIN32) || defined(__WIN32__) || defined(WIN32)
-#  include "windows/FileMonitorImpl.hpp"
+#  include "windows/FileMonitorImpl.h"
 #elif defined(__APPLE__) && defined(__MACH__)
-#  include "fsevents/FileMonitorImpl.hpp"
+#  include "fsevents/FileMonitorImpl.h"
 #else
 // fallback method
-#  include "polling/FileMonitorImpl.hpp"
+#  include "polling/FileMonitorImpl.h"
 #endif
 
 
@@ -23,7 +44,7 @@ template <typename FileMonitorImplementation = FileMonitorImpl>
 class BasicFileMonitorService
 : public boost::asio::io_service::service
 {
-public:
+  public:
 	static boost::asio::io_service::id id;
 	
 	explicit BasicFileMonitorService( boost::asio::io_service &io_service )
@@ -68,17 +89,25 @@ public:
 	uint64_t addPath( implementation_type &impl, const boost::filesystem::path &path, const std::string& regexMatch )
 	{
 		if ( ! boost::filesystem::is_directory( path ) ) {
+			// TODO migrate to a different exception
 			throw std::invalid_argument("boost::asio::BasicFileMonitorService::addFile: \"" +
 										path.string() + "\" is not a valid file or directory entry");
 		}
+		
 		return impl->addPath( path, regexMatch );
 	}
 	
 	uint64_t addFile( implementation_type &impl, const boost::filesystem::path &path )
 	{
 		if ( ! boost::filesystem::is_regular_file( path ) ) {
+			// TODO migrate to a different exception
 			throw std::invalid_argument("boost::asio::BasicFileMonitorService::addFile: \"" +
 										path.string() + "\" is not a valid file or directory entry");
+		}
+		if ( boost::filesystem::is_symlink( path ) && boost::filesystem::read_symlink( path ) != path ) {
+			// TODO migrate to a different exception
+			throw std::invalid_argument("boost::asio::BasicFileMonitorService::addFile: \"" +
+										path.string() + "\" this path is a symlink and must be resolved");
 		}
 		return impl->addFile( path );
 	}
@@ -101,10 +130,7 @@ public:
 	{
 	public:
 		MonitorOperation( implementation_type &impl, boost::asio::io_service &ioService, Handler handler )
-		: mImpl( impl ),
-		mIoService( ioService ),
-		mWork( ioService ),
-		mHandler( handler )
+		: mImpl( impl ), mIoService( ioService ), mWork( ioService ), mHandler( handler )
 		{
 		}
 		
@@ -118,8 +144,8 @@ public:
 			}
 			else {
 				this->mIoService.post( boost::asio::detail::bind_handler( mHandler,
-																	   boost::asio::error::operation_aborted,
-																	   FileMonitorEvent() ) );
+																		  boost::asio::error::operation_aborted,
+																		  FileMonitorEvent() ) );
 			}
 		}
 		
@@ -139,7 +165,7 @@ public:
 		this->mAsyncMonitorIoService.post( MonitorOperation<Handler>( impl, this->get_io_service(), handler ) );
 	}
 	
-private:
+  private:
 	void shutdown_service()
 	{
 		//TODO need anything?
