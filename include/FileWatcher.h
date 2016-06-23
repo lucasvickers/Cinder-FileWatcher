@@ -88,17 +88,6 @@ class FileWatcher {
 	std::unique_ptr<boost::asio::io_service::work>	mAsioWork;
 };
 
-
-template <typename KeyT, typename ContainerT>
-class WatchedMap : public std::map<KeyT, ContainerT> {
-	// TODO add routines to make accessing a bit cleaner
-};
-	
-// User defined map
-template <typename KeyT>
-using WatchedTargetMap = WatchedMap<KeyT, WatchedTarget>;
-	
-
 //! Used to watch a single file
 class WatchedTarget : private ci::Noncopyable {
 
@@ -162,6 +151,16 @@ class WatchedTarget : private ci::Noncopyable {
 	WatchCallback	mCallback;
 	std::string 	mRegexMatch;
 		
+};
+	
+template <typename KeyT>
+class WatchedTargetMap : public std::map<KeyT, WatchedTarget> {
+public:
+	
+	void addWatch( KeyT key, WatchedTarget&& target ) {
+		this->insert( std::make_pair( key, std::move( target ) ) );
+	}
+
 };
 
 } // namespace filewatcher

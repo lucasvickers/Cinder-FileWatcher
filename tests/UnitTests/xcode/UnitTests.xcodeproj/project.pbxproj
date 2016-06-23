@@ -7,11 +7,14 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		5F76DA331D0E3DB7001E3E4B /* BasicTest.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 5F76DA311D0E3DB7001E3E4B /* BasicTest.cpp */; };
+		5F24058A1D1A31CF0056637B /* RegexTest.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 5F76DA481D0F9718001E3E4B /* RegexTest.cpp */; };
+		5F24058B1D1A32F60056637B /* DeleteTest.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 5F24057E1D1A1E060056637B /* DeleteTest.cpp */; };
+		5F24058C1D1A32F90056637B /* RenameTest.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 5F24057F1D1A1E060056637B /* RenameTest.cpp */; };
+		5F24058D1D1A32FE0056637B /* BasicTest.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 5F76DA311D0E3DB7001E3E4B /* BasicTest.cpp */; };
+		5F24058F1D1A33420056637B /* ContainerTest.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 5F24058E1D1A33420056637B /* ContainerTest.cpp */; };
 		5F76DA341D0E3DB7001E3E4B /* TestMain.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 5F76DA321D0E3DB7001E3E4B /* TestMain.cpp */; };
 		5F76DA3B1D0E42E5001E3E4B /* FileMonitorImpl.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 5F76DA3A1D0E42E5001E3E4B /* FileMonitorImpl.cpp */; };
 		5F76DA451D0E43D2001E3E4B /* FileWatcher.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 5F76DA431D0E43D2001E3E4B /* FileWatcher.cpp */; };
-		5F76DA491D0F9718001E3E4B /* RegexTest.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 5F76DA481D0F9718001E3E4B /* RegexTest.cpp */; };
 		9CC02E8F1BDE75EF00B5058A /* AVFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 006D720219952D00008149E2 /* AVFoundation.framework */; };
 		9CC02E901BDE75F600B5058A /* CoreMedia.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 006D720319952D00008149E2 /* CoreMedia.framework */; };
 		9CC02E921BDE75FE00B5058A /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9CC02E911BDE75FE00B5058A /* Cocoa.framework */; };
@@ -52,6 +55,9 @@
 		29B97324FDCFA39411CA2CEA /* AppKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppKit.framework; path = /System/Library/Frameworks/AppKit.framework; sourceTree = "<absolute>"; };
 		29B97325FDCFA39411CA2CEA /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = /System/Library/Frameworks/Foundation.framework; sourceTree = "<absolute>"; };
 		5323E6B10EAFCA74003A9687 /* CoreVideo.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreVideo.framework; path = /System/Library/Frameworks/CoreVideo.framework; sourceTree = "<absolute>"; };
+		5F24057E1D1A1E060056637B /* DeleteTest.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = DeleteTest.cpp; sourceTree = "<group>"; };
+		5F24057F1D1A1E060056637B /* RenameTest.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = RenameTest.cpp; sourceTree = "<group>"; };
+		5F24058E1D1A33420056637B /* ContainerTest.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ContainerTest.cpp; sourceTree = "<group>"; };
 		5F76DA311D0E3DB7001E3E4B /* BasicTest.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = BasicTest.cpp; sourceTree = "<group>"; };
 		5F76DA321D0E3DB7001E3E4B /* TestMain.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = TestMain.cpp; sourceTree = "<group>"; };
 		5F76DA351D0E3FE0001E3E4B /* utils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = utils.h; sourceTree = "<group>"; };
@@ -240,6 +246,9 @@
 		9CA851B51C1F74000049358B /* Source */ = {
 			isa = PBXGroup;
 			children = (
+				5F24058E1D1A33420056637B /* ContainerTest.cpp */,
+				5F24057E1D1A1E060056637B /* DeleteTest.cpp */,
+				5F24057F1D1A1E060056637B /* RenameTest.cpp */,
 				5F76DA481D0F9718001E3E4B /* RegexTest.cpp */,
 				5F76DA351D0E3FE0001E3E4B /* utils.h */,
 				5F76DA311D0E3DB7001E3E4B /* BasicTest.cpp */,
@@ -306,11 +315,14 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				5F76DA331D0E3DB7001E3E4B /* BasicTest.cpp in Sources */,
-				5F76DA491D0F9718001E3E4B /* RegexTest.cpp in Sources */,
 				5F76DA3B1D0E42E5001E3E4B /* FileMonitorImpl.cpp in Sources */,
+				5F24058A1D1A31CF0056637B /* RegexTest.cpp in Sources */,
+				5F24058B1D1A32F60056637B /* DeleteTest.cpp in Sources */,
+				5F24058D1D1A32FE0056637B /* BasicTest.cpp in Sources */,
 				5F76DA451D0E43D2001E3E4B /* FileWatcher.cpp in Sources */,
+				5F24058F1D1A33420056637B /* ContainerTest.cpp in Sources */,
 				5F76DA341D0E3DB7001E3E4B /* TestMain.cpp in Sources */,
+				5F24058C1D1A32F90056637B /* RenameTest.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

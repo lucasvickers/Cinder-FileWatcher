@@ -66,8 +66,9 @@ uint64_t FileMonitorImpl::addFile( const boost::filesystem::path &file )
 	
 	assert( mFilesMmap.size() == mFiles.size() );
 	
-	// increment the file target (can be multiple watches on a single file)
-	incrementTarget( file );
+	// increment the file target (can be multiple watches on a directory)
+	// fsevents wants the path not the file, so pass the parent_path
+	incrementTarget( file.parent_path() );
 	
 	stopFsevents();
 	startFsevents();
@@ -85,12 +86,12 @@ void FileMonitorImpl::remove( uint64_t id )
 	if( id % 2 == 0 ) {
 		// even is file
 		path = removeEntry<decltype( mFiles ), decltype( mFilesMmap )>( id, mFiles, mFilesMmap );
+		decrementTarget( path.parent_path() );
 	} else {
 		// odd is path
 		path = removeEntry<decltype( mPaths )>( id, mPaths );
+		decrementTarget( path );
 	}
-	
-	decrementTarget( path );
 	
 	stopFsevents();
 	startFsevents();
