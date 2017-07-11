@@ -54,6 +54,5 @@ TEST_CASE( "BasicFileTest" )
 		CI_ASSERT( actions[target].modified >= 1 );
 		CI_ASSERT( actions[dummy].modified == 0 );
 		CI_ASSERT( actions[dummy2].modified == 0 && actions[dummy2].added == 0 );
-
 	}
 }
